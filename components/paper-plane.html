@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<style>html, body { margin: 0; }</style>
+</head>
+<body>
+<title>Paper Plane Note</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout concept: one composer card sits low on a white stage and never gets replaced. Sending
+   collapses it to a slim bar, prints the note as a receipt above it, folds that straight up into a
+   white plane, and flies the plane through two loops (top right, then bottom left), under the bar and
+   up into the Send button. The same card then opens into the delivered message. */
+:root {
+  --bg: #aeb6c4;
+  --surface: #ffffff;
+  --wash: #f8fafc;
+  --fold: #eef2f7;
+  --ink: #1e293b;
+  --muted: #64748b;
+  --line: #e5e7eb;
+  --line-strong: #cbd5e1;
+  --blue: #2563eb;
+  --blue-deep: #1d4ed8;
+  --blue-on: #ffffff;
+  --blue-text: #2563eb;
+  --ghost: #f3f4f6;
+  --shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 12px 28px -14px rgba(15, 23, 42, .16);
+
+  /* paper is a physical object: same colors in both themes */
+  --paper: #ffffff;
+  --paper-ink: #1e293b;
+  --paper-mute: #64748b;
+  --thermal: #f1f3f7;
+
+  --font-ui: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --r-card: 20px;
+  --r-btn: 10px;
+  --bar-h: 56px;
+  --sheet-w: 232px;
+  --sheet-h: 288px;
+  --ease: cubic-bezier(.5, 0, .2, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #05070c; --surface: #111827; --wash: #0e1422; --fold: #172033; --ghost: #1a2336;
+    --ink: #e5eaf3; --muted: #94a3b8; --line: #243044; --line-strong: #34425a;
+    --blue-text: #6ea0ff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 14px 30px -14px rgba(0, 0, 0, .6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #05070c; --surface: #111827; --wash: #0e1422; --fold: #172033; --ghost: #1a2336;
+  --ink: #e5eaf3; --muted: #94a3b8; --line: #243044; --line-strong: #34425a;
+  --blue-text: #6ea0ff;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 14px 30px -14px rgba(0, 0, 0, .6);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 14px/1.5 var(--font-ui);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-font-smoothing: antialiased;
+}
+button, textarea { font: inherit; color: inherit; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+[hidden] { display: none !important; }
+
+/* The bar sits near the bottom of the page so the plane has room to loop above and below it */
+.stage {
+  min-height: 100svh;
+  display: grid; justify-items: center; align-content: start;
+  padding-block: max(24px, calc(100svh - 374px - 100px)) 100px;
+}
+.panel { width: min(100%, 400px); }
+.deck {
+  position: relative;
+  min-height: calc(var(--sheet-h) + var(--bar-h) + 30px);
+  display: flex; flex-direction: column; justify-content: flex-end;
+}
+
+/* One card, four collapsible sections: composer, delivered message, send row, action row */
+.composer {
+  position: relative; z-index: 2;
+  background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--r-card);
+  box-shadow: var(--shadow); overflow: hidden;
+  outline: 1px solid transparent; outline-offset: 5px;
+  transition: border-color .15s, border-radius .45s var(--ease), outline-color .3s;
+}
+.composer:focus-within { border-color: var(--line-strong); }
+.composer.is-sending { border-radius: 28px; outline-color: var(--line); }
+.composer.is-delivered { border-radius: 22px; }
+
+.fold { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .45s var(--ease), opacity .28s ease; }
+.fold > div { min-height: 0; overflow: hidden; }
+.f-sent, .f-actions { grid-template-rows: 0fr; opacity: 0; }
+.is-sending .f-main { grid-template-rows: 0fr; opacity: 0; }
+.is-delivered .f-sent, .is-delivered .f-actions { grid-template-rows: 1fr; opacity: 1; }
+.is-delivered .f-foot { grid-template-rows: 0fr; opacity: 0; }
+
+.c-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px 0 16px; color: var(--muted); font-size: 12.5px; }
+.c-head strong { color: var(--ink); font-weight: 500; }
+.chip {
+  display: inline-grid; place-items: center; flex: none;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--fold); color: var(--ink);
+  font-size: 10px; font-weight: 600; letter-spacing: .02em;
+}
+.c-body { padding: 8px 16px 0; }
+.note {
+  display: block; width: 100%; min-height: 112px;
+  border: 0; outline: 0; resize: none; background: transparent;
+  font-size: 16px; line-height: 1.55; padding: 4px 0;
+}
+.note::placeholder { color: var(--muted); }
+.composer:has(.note:focus-visible) { box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 22%, transparent), var(--shadow); }
+
+.c-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 8px 8px 16px; min-height: 54px; }
+.slotline { display: grid; min-width: 0; }
+.slotline > * { grid-area: 1 / 1; transition: opacity .2s ease; }
+.hint { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; }
+.status { opacity: 0; color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.is-sending .hint { opacity: 0; }
+.is-sending .status { opacity: 1; }
+kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background: var(--wash); border-radius: 5px; padding: 3px 5px; color: var(--muted); }
+
+.send {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  height: 38px; padding: 0 14px 0 13px;
+  border: 0; border-radius: var(--r-btn);
+  background: var(--blue); color: var(--blue-on);
+  font-weight: 600; font-size: 14px; cursor: pointer;
+  transition: background .15s, transform .15s, opacity .15s;
+}
+.send .l { display: inline-flex; align-items: center; gap: 8px; }
+.send .l svg { transition: transform .2s ease; }
+.send:hover:not(:disabled) { background: var(--blue-deep); }
+.send:hover:not(:disabled) .l-idle svg { transform: translate(2px, -2px); }
+.send:active:not(:disabled) { transform: scale(.97); }
+.send:disabled { opacity: .4; cursor: not-allowed; }
+.is-sending .send:disabled { opacity: 1; cursor: default; }
+:is(.send, .btn):focus-visible { outline: 2px solid var(--blue-text); outline-offset: 2px; }
+.ring { width: 13px; height: 13px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .35); border-top-color: #fff; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Delivered message, opened inside the same card */
+.s-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px 0; }
+.s-to { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; min-width: 0; }
+.s-to .chip { width: 26px; height: 26px; font-size: 10.5px; }
+.s-head time { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.s-note { margin: 8px 18px 0; color: var(--muted); font-size: 15px; line-height: 1.5; overflow-wrap: anywhere; }
+.c-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 8px 8px; }
+.btn {
+  flex: 1 1 140px; height: 42px; padding: 0 14px;
+  border: 0; border-radius: var(--r-btn);
+  font-weight: 600; font-size: 15px; cursor: pointer;
+  background: var(--ghost); color: var(--ink);
+  transition: background .15s, transform .15s;
+}
+.btn:hover { background: var(--fold); }
+.btn:active { transform: scale(.98); }
+.btn.primary { background: var(--blue); color: var(--blue-on); }
+.btn.primary:hover { background: var(--blue-deep); }
+
+/* Paper slot: the note prints upward out of the bar */
+.slot {
+  position: absolute; z-index: 1; left: 50%; bottom: var(--bar-h);
+  width: var(--sheet-w); height: calc(var(--sheet-h) + 30px);
+  margin-left: calc(var(--sheet-w) / -2);
+  overflow: hidden;
+}
+.slot.open { overflow: visible; }
+.lift {
+  position: absolute; left: 0; bottom: 14px;
+  width: var(--sheet-w); height: var(--sheet-h);
+  perspective: 1100px;
+  filter: drop-shadow(0 10px 12px rgba(15, 23, 42, .12));
+}
+.sheet { position: absolute; inset: 0; transform-style: preserve-3d; }
+.grp, .pc { position: absolute; inset: 0; transform-style: preserve-3d; }
+.grp > .pc:first-child { transform-style: flat; }
+.face {
+  position: absolute; left: 0; top: 0;
+  width: var(--sheet-w); height: var(--sheet-h);
+  padding: 22px 24px;
+  background: var(--paper); color: var(--paper-ink);
+  font: 400 13px/1.55 var(--font-mono);
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  transition: clip-path .26s ease, background-color .26s ease;
+}
+.sheet:not(.paper) .face { background: var(--thermal); }
+.face.b { padding: 0; }
+.face.b.flap { background: linear-gradient(135deg, #f7f8fb, #e8ecf2); }
+.face.b.body { background: #fbfcfd; }
+.sheet.paper .grp .face.f { background-color: color-mix(in srgb, #1e293b calc(var(--sh, 0) * 100%), var(--paper)); }
+.grp .face.b.body { background: color-mix(in srgb, #1e293b calc(var(--sh, 0) * 100%), #fbfcfd); }
+.grp .face.b.flap { background: linear-gradient(135deg, color-mix(in srgb, #1e293b calc(var(--sh, 0) * 100%), #f7f8fb), color-mix(in srgb, #1e293b calc(var(--sh, 0) * 100%), #e8ecf2)); }
+.sheet.back .face.f .rc-text, .sheet.back .face.f .rc-to { opacity: .13; }
+.sheet.back .grp .face.f { background-image: linear-gradient(90deg, transparent calc(50% - 1px), rgba(71, 85, 105, .55) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)), linear-gradient(180deg, rgba(100, 116, 139, .2) 0 41%, transparent 41%); }
+.sheet.back .grp.r::after { content: ""; position: absolute; left: calc(var(--sheet-w) / 2 - 1px); top: 0; width: 2px; height: 100%; background: linear-gradient(#6b7585, #9aa3b2); opacity: .7; pointer-events: none; transform: translateZ(2px); }
+.grp.l { --sh: var(--shl, 0); }
+.grp.r { --sh: var(--shr, 0); }
+.face.f::after {
+  content: ""; position: absolute; inset: 9px;
+  border: 1.5px dashed var(--line-strong); border-radius: 4px;
+  opacity: 0; transition: opacity .26s ease;
+}
+.sheet.paper .face.f::after { opacity: 1; }
+.rc-top, .rc-bot { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: .08em; color: var(--paper-mute); transition: opacity .26s ease; }
+.rc-to { margin-top: 10px; color: var(--paper-mute); }
+.rc-rule { margin: 9px 0; border-top: 1.5px dotted #94a3b8; transition: opacity .26s ease; }
+.rc-text { display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.rc-bot { margin-top: 12px; }
+.sheet.paper :is(.rc-top, .rc-bot, .rc-rule) { opacity: 0; }
+
+/* Flight layers: comet trail on a canvas, the folded plane on a perspective layer above it */
+.trail { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 19; }
+.fly {
+  position: fixed; left: 0; top: 0; z-index: 20; pointer-events: none;
+  width: var(--sheet-w); height: var(--sheet-h);
+  perspective: 1100px;
+  filter: drop-shadow(0 22px 18px rgba(15, 23, 42, .30));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  .ring { animation: none; }
+}
+</style>
+
+<main class="stage">
+  <h1 class="sr">Paper plane note</h1>
+  <div class="panel">
+    <div class="deck">
+      <div class="slot" id="slot" hidden>
+        <div class="lift" id="lift"><div class="sheet" id="sheet"></div></div>
+      </div>
+
+      <form class="composer" id="composer" autocomplete="off">
+        <div class="fold f-main" id="fMain"><div>
+          <div class="c-head">
+            <span class="chip" aria-hidden="true">PN</span>
+            <span>To <strong>Priya Nair</strong></span>
+          </div>
+          <div class="c-body">
+            <label class="sr" for="note">Note to Priya Nair</label>
+            <textarea class="note" id="note" rows="4" placeholder="Write a quick note…">Thanks for covering the Thursday handover. The freezer alarm is fixed and the sample log is up to date.</textarea>
+          </div>
+        </div></div>
+
+        <div class="fold f-sent" id="fSent" inert><div>
+          <div class="s-head">
+            <span class="s-to">Sent to <span class="chip" aria-hidden="true">PN</span> Priya Nair</span>
+            <time id="sTime">12:00 PM</time>
+          </div>
+          <p class="s-note">She reads notes at the start of her day and replies from her own inbox. Keep an eye on your email.</p>
+        </div></div>
+
+        <div class="fold f-foot" id="fFoot"><div>
+          <div class="c-foot">
+            <div class="slotline">
+              <span class="hint"><kbd id="mod">⌘</kbd><kbd>Enter</kbd> to send</span>
+              <span class="status" id="status" aria-hidden="true">On its way to Priya</span>
+            </div>
+            <button class="send" id="send" type="submit">
+              <span class="l l-idle" id="lIdle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                Send
+              </span>
+              <span class="l" id="lBusy" hidden>Sending <span class="ring" aria-hidden="true"></span></span>
+              <span class="l" id="lDone" hidden>
+                <svg id="doneIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                Sent
+              </span>
+            </button>
+          </div>
+        </div></div>
+
+        <div class="fold f-actions" id="fActions" inert><div>
+          <div class="c-actions">
+            <button class="btn primary" id="again" type="button">Write another</button>
+            <button class="btn" id="edit" type="button">Edit and resend</button>
+          </div>
+        </div></div>
+      </form>
+    </div>
+  </div>
+</main>
+
+<canvas class="trail" id="trail" aria-hidden="true" hidden></canvas>
+<div class="fly" id="fly" hidden></div>
+<div class="sr" id="live" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const ease = (p) => (1 - Math.cos(Math.PI * p)) / 2;
+  const nextFrames = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const run = (el, kf, o) => el.animate(kf, { fill: 'forwards', ...o }).finished;
+  const tween = (ms, fn) => new Promise((res) => {
+    const t0 = performance.now();
+    const step = (now) => { const p = Math.min(1, (now - t0) / ms); fn(p); p < 1 ? requestAnimationFrame(step) : res(); };
+    requestAnimationFrame(step);
+  });
+
+  const el = {
+    composer: $('composer'), note: $('note'), send: $('send'), status: $('status'),
+    slot: $('slot'), lift: $('lift'), sheet: $('sheet'), live: $('live'),
+    trail: $('trail'), fly: $('fly'),
+    fMain: $('fMain'), fSent: $('fSent'), fFoot: $('fFoot'), fActions: $('fActions'),
+  };
+  const time = () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+  /* ---------- Sheet: print, paper, fold ---------- */
+  const W = 232, H = 288, C = W / 2, TEETH = 14, SHIFT = W / 4;
+  const poly = (pts) => 'polygon(' + pts.map(([x, y]) => x + 'px ' + y + 'px').join(',') + ')';
+  const mirror = (pts, cx) => pts.map(([x, y]) => [2 * cx - x, y]);
+  const jagged = [[0, 0], [W, 0]], straight = [[0, 0], [W, 0]];
+  for (let i = TEETH; i >= 0; i--) { jagged.push([i * W / TEETH, i % 2 ? H : H - 8]); straight.push([i * W / TEETH, H]); }
+
+  function face(cls, text, stamp) {
+    const f = document.createElement('div');
+    f.className = 'face ' + cls;
+    f.innerHTML = '<div class="rc-top"><span>NOTE RECEIPT</span><span class="t"></span></div>' +
+      '<div class="rc-to">To Priya Nair</div><div class="rc-rule"></div><div class="rc-text"></div>' +
+      '<div class="rc-rule"></div><div class="rc-bot"><span>BY AIR MAIL</span><span>***</span></div>';
+    f.querySelector('.t').textContent = stamp;
+    f.querySelector('.rc-text').textContent = text;
+    return f;
+  }
+
+  // A foldable piece: text on the front, blank paper on the back, both clipped to the same shape
+  function piece(shape, cx, backKind, text, stamp) {
+    const pc = document.createElement('div');
+    pc.className = 'pc';
+    const front = face('f', text, stamp);
+    front.style.clipPath = poly(shape);
+    const back = document.createElement('div');
+    back.className = 'face b ' + backKind;
+    Object.assign(back.style, { clipPath: poly(mirror(shape, cx)), transform: 'rotateY(180deg)', transformOrigin: cx + 'px 50%' });
+    pc.append(front, back);
+    return pc;
+  }
+
+  // Two halves (the right one flips over the left), each with a corner flap that folds to the center line
+  function buildRig(text, stamp) {
+    const bodyL = [[C, 0], [0, C], [0, H], [C, H]], bodyR = [[C, 0], [W, C], [W, H], [C, H]];
+    const flapL = [[0, 0], [C, 0], [0, C]], flapR = [[W, 0], [C, 0], [W, C]];
+    const fl = piece(flapL, C / 2, 'flap', text, stamp), fr = piece(flapR, 3 * C / 2, 'flap', text, stamp);
+    fl.style.transformOrigin = `${C / 2}px ${C / 2}px`; fl.style.transform = 'translateZ(1px)';
+    fr.style.transformOrigin = `${3 * C / 2}px ${C / 2}px`; fr.style.transform = 'translateZ(1px)';
+    const left = document.createElement('div'), right = document.createElement('div');
+    left.className = right.className = 'grp';
+    left.append(piece(bodyL, C / 2, 'body', text, stamp), fl);
+    right.append(piece(bodyR, 3 * C / 2, 'body', text, stamp), fr);
+    right.style.transformOrigin = C + 'px 0';
+    left.style.transform = 'translateX(0px)';
+    right.style.transform = 'translateX(0px) translateZ(3px)';
+    el.sheet.replaceChildren(left, right);
+    return { fl, fr, left, right };
+  }
+
+  async function printAndFold(text, stamp) {   // resolves with the rig once the corners are folded in
+    const inOut = 'cubic-bezier(.5, 0, .2, 1)';
+    el.sheet.className = 'sheet';
+    const strip = face('f strip', text, stamp);
+    strip.style.clipPath = poly(jagged);
+    el.sheet.replaceChildren(strip);
+    el.lift.style.opacity = 1;
+    el.slot.classList.remove('open');
+    el.slot.hidden = false;
+
+    await wait(120);                                             // 1. print out of the bar
+    await run(el.sheet, [{ transform: 'translateY(calc(100% + 16px))' }, { transform: 'translateY(0)' }], { duration: 700, easing: 'steps(18, end)' });
+
+    el.sheet.classList.add('paper');                              // 2. receipt becomes paper
+    strip.style.clipPath = poly(straight);
+    await wait(280);
+
+    el.slot.classList.add('open');                                // 3. corners in, then in half (stays centered)
+    const rig = buildRig(text, stamp);
+    await nextFrames();
+    await Promise.all([
+      run(rig.fl, [{ transform: 'translateZ(1px) rotate3d(-1,1,0,0deg)' }, { transform: 'translateZ(1px) rotate3d(-1,1,0,180deg)' }], { duration: 380, easing: inOut }),
+      run(rig.fr, [{ transform: 'translateZ(1px) rotate3d(-1,-1,0,0deg)' }, { transform: 'translateZ(1px) rotate3d(-1,-1,0,180deg)' }], { duration: 380, easing: inOut }),
+    ]);
+    await wait(60);
+    for (const n of [rig.fl, rig.fr]) n.getAnimations().forEach((an) => { an.commitStyles(); an.cancel(); });
+    return rig;
+  }
+
+  /* ---------- Flight: two loops, under the bar, up into the button ---------- */
+  // The plane is the same sheet, moved onto a fixed layer with its own perspective. pose: tilt = camera lean
+  // while hovering, pitch = the plane's own lean in flight, bank = roll into a turn, flip = turned over (180)
+  const pose = { cx: 0, cy: 0, tilt: 0, bank: 0, flip: 0, pitch: 0 };
+  let rig = null;
+  const clampN = clamp;
+  function placePlane(x, y, deg, sc) {
+    el.fly.style.transform = `translate(${x - W / 2}px, ${y - H / 2}px) scale(${sc})`;
+    el.sheet.classList.toggle('back', pose.flip > 90);
+    el.sheet.style.transform = `rotateX(${pose.tilt}deg) rotateZ(${deg}deg) rotateX(${pose.pitch}deg) rotateY(${pose.bank * 30 + pose.flip}deg)`;
+    el.sheet.style.setProperty('--shl', Math.max(0, .02 - .06 * pose.bank).toFixed(3));
+    el.sheet.style.setProperty('--shr', clampN(.09 + .14 * pose.bank, 0, .3).toFixed(3));
+  }
+  function setTent(a) {
+    rig.left.style.transform = `rotateY(${-a}deg)`;
+    rig.right.style.transform = `translateZ(3px) rotateY(${a}deg)`;
+  }
+  // Second fold: the slanted edges come in to the center so the sheet narrows to a delta
+  function setDelta(on) {
+    const mk = (pc, shape, cx) => {
+      const f = pc.querySelector('.face.f'), b = pc.querySelector('.face.b');
+      f.style.clipPath = poly(shape); b.style.clipPath = poly(mirror(shape, cx));
+    };
+    const L = on ? [[C, 0], [0, H], [C, H]] : [[C, 0], [0, C], [0, H], [C, H]];
+    const R = on ? [[C, 0], [W, H], [C, H]] : [[C, 0], [W, C], [W, H], [C, H]];
+    mk(rig.left.firstElementChild, L, C / 2); mk(rig.right.firstElementChild, R, 3 * C / 2);
+    for (const fl of [rig.fl, rig.fr]) { fl.style.transition = 'opacity .22s ease'; fl.style.opacity = on ? 0 : 1; }
+  }
+  function toFly() {
+    const r = el.lift.getBoundingClientRect();
+    el.sheet.getAnimations().forEach((an) => an.cancel());
+    el.sheet.style.transform = '';
+    pose.cx = r.left + r.width / 2; pose.cy = r.top + r.height / 2; pose.tilt = 0; pose.bank = 0; pose.flip = 0; pose.pitch = 0;
+    el.fly.hidden = false; el.fly.style.opacity = 1;
+    el.fly.append(el.sheet);
+    placePlane(pose.cx, pose.cy, 0, 1);
+    el.lift.style.opacity = 0;
+    el.slot.hidden = true;
+  }
+  const TENT_FLY = 38;
+
+  // The flight path follows a hand sketch, drawn only from straight lines, one ellipse and rounded
+  // corners (circular arcs), so there are no kinks or wobbles anywhere:
+  // straight up -> loop at the top right -> straight run down-left -> corner -> straight up the left side
+  // -> rounded top-left corner -> long straight diagonal -> rounded corner -> straight down the right side
+  // -> U-turn under the bar -> straight up into the Send button.
+  const unit = (a, b) => { const d = Math.hypot(b.x - a.x, b.y - a.y) || 1; return { x: (b.x - a.x) / d, y: (b.y - a.y) / d, len: d }; };
+
+  // Polyline with circular-arc corners; returns sampled points
+  function rounded(verts, radii) {
+    const out = [verts[0]];
+    for (let i = 1; i < verts.length - 1; i++) {
+      const V = verts[i], d1 = unit(V, verts[i - 1]), d2 = unit(V, verts[i + 1]);
+      const ang = Math.acos(clamp(d1.x * d2.x + d1.y * d2.y, -1, 1));
+      let r = radii[i - 1];
+      let t = r / Math.tan(ang / 2);
+      const tMax = Math.min(d1.len, d2.len) * .5;
+      if (t > tMax) { t = tMax; r = t * Math.tan(ang / 2); }
+      const P1 = { x: V.x + d1.x * t, y: V.y + d1.y * t }, P2 = { x: V.x + d2.x * t, y: V.y + d2.y * t };
+      let bx = d1.x + d2.x, by = d1.y + d2.y; const bl = Math.hypot(bx, by) || 1; bx /= bl; by /= bl;
+      const k = r / Math.sin(ang / 2), C = { x: V.x + bx * k, y: V.y + by * k };
+      let a0 = Math.atan2(P1.y - C.y, P1.x - C.x), a1 = Math.atan2(P2.y - C.y, P2.x - C.x);
+      let da = a1 - a0; while (da > Math.PI) da -= 2 * Math.PI; while (da < -Math.PI) da += 2 * Math.PI;
+      const n = Math.max(4, Math.ceil(Math.abs(da) * r / 3));
+      out.push(P1);
+      for (let j = 1; j < n; j++) out.push({ x: C.x + r * Math.cos(a0 + da * j / n), y: C.y + r * Math.sin(a0 + da * j / n) });
+      out.push(P2);
+    }
+    out.push(verts[verts.length - 1]);
+    return out;
+  }
+
+  function buildPath(from, to, vw) {
+    const bar = el.composer.getBoundingClientRect();
+    const barW = bar.width || 400;
+    const sx = Math.min(barW / 323, (vw - 48) / 624);
+    const sy = Math.min(sx * .9, Math.max(.3, (bar.top - 40) / 493));
+    const X = (u) => from.x + (u - 408.5) * sx, Y = (v) => Math.max(24, bar.top + (v - 583) * sy);
+
+    // 1) straight up, then the clockwise loop (ellipse), entered at its leftmost point so the climb is tangent
+    const rx = Math.min(165 * sx, (vw - 24 - from.x) / 2), ry = 118 * sy;
+    const ey = Y(182), ecx = from.x + rx;
+    const E = (a) => ({ x: ecx + rx * Math.cos(a * Math.PI / 180), y: ey + ry * Math.sin(a * Math.PI / 180) });
+    const C1 = { x: Math.max(26, X(112)), y: Y(495) };
+    // leave the loop where its tangent points exactly at the bottom-left corner: no kink on the straight run
+    let aExit = 400, best = 1e9;
+    for (let a = 360; a <= 450; a += .1) {
+      const P = E(a), tx = -rx * Math.sin(a * Math.PI / 180), ty = ry * Math.cos(a * Math.PI / 180);
+      const vx = C1.x - P.x, vy = C1.y - P.y;
+      const cr = Math.abs(tx * vy - ty * vx) / (Math.hypot(tx, ty) * Math.hypot(vx, vy) || 1);
+      if (tx * vx + ty * vy > 0 && cr < best) { best = cr; aExit = a; }
+    }
+    const head = [from, { x: from.x, y: ey }];
+    for (let a = 180 + 2; a <= aExit; a += 2) head.push(E(a));
+    head.push(E(aExit));
+
+    // 2) the rest: corners rounded with circular arcs between straight lines
+    const D1 = { x: X(330), y: Y(235) }, D2 = { x: X(560), y: Y(430) }, slope = (D2.y - D1.y) / (D2.x - D1.x);
+    const xr = Math.min(vw - 22, bar.right + .136 * barW);                       // right side, just outside the bar
+    const rU = Math.min(58, (xr - to.x) / 2);                                    // U-turn radius so the climb is exactly at the button
+    const yBot = bar.bottom + 10 + rU;
+    const TL = { x: C1.x, y: D1.y + slope * (C1.x - D1.x) };
+    const TR = { x: xr, y: D1.y + slope * (xr - D1.x) };
+    const verts = [E(aExit), C1, TL, TR, { x: xr, y: yBot }, { x: to.x, y: yBot }, to];
+    const radii = [Math.max(10, 14 * sx), Math.min(140 * sx, 150), Math.max(24, 44 * sx), rU, rU];
+    const tail = rounded(verts, radii);
+
+    // Straight runs are only two points long: subdivide so the comet tail can be cut exactly at the plane
+    const raw = head.concat(tail.slice(1)), out = [raw[0]];
+    for (let i = 1; i < raw.length; i++) {
+      const A = raw[i - 1], B = raw[i], n = Math.max(1, Math.ceil(Math.hypot(B.x - A.x, B.y - A.y) / 3));
+      for (let j = 1; j <= n; j++) out.push({ x: A.x + (B.x - A.x) * j / n, y: A.y + (B.y - A.y) * j / n });
+    }
+    const cum = [0];
+    for (let i = 1; i < out.length; i++) cum.push(cum[i - 1] + Math.hypot(out[i].x - out[i - 1].x, out[i].y - out[i - 1].y));
+    return { pts: out, cum, length: cum[cum.length - 1] };
+  }
+  function at(path, len) {
+    const { pts, cum } = path;
+    let lo = 0, hi = cum.length - 1;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; cum[m] < len ? (lo = m) : (hi = m); }
+    const seg = cum[hi] - cum[lo] || 1, u = clamp((len - cum[lo]) / seg, 0, 1);
+    return { x: pts[lo].x + (pts[hi].x - pts[lo].x) * u, y: pts[lo].y + (pts[hi].y - pts[lo].y) * u, deg: Math.atan2(pts[hi].y - pts[lo].y, pts[hi].x - pts[lo].x) * 180 / Math.PI + 90 };
+  }
+
+  // Comet: bright and thick at the plane, thin and faded toward the tail
+  function drawTrail(ctx, path, head, tail, color) {
+    const { pts, cum } = path;
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.strokeStyle = color; ctx.lineCap = 'round';
+    const span = Math.max(1, head - tail);
+    for (let i = 1; i < pts.length; i++) {
+      if (cum[i] < tail || cum[i - 1] > head) continue;
+      const f = clamp((Math.min(cum[i], head) - tail) / span, 0, 1);
+      ctx.globalAlpha = Math.pow(f, 1.5);
+      ctx.lineWidth = .6 + 2.2 * f;
+      ctx.beginPath(); ctx.moveTo(pts[i - 1].x, pts[i - 1].y); ctx.lineTo(pts[i].x, pts[i].y); ctx.stroke();
+    }
+  }
+
+  async function flight(from, to) {
+    const vw = innerWidth, vh = innerHeight, dpr = devicePixelRatio || 1;
+    const path = buildPath(from, to, vw);
+    const c = el.trail, ctx = c.getContext('2d');
+    c.width = vw * dpr; c.height = vh * dpr; c.style.width = vw + 'px'; c.style.height = vh + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.hidden = false;
+    const color = getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() || '#2563eb';
+    const tailLen = Math.min(240, path.length * .14);
+
+    let bankNow = 0;
+    await tween(4600, (p) => {
+      const head = ease(p) * path.length, pt = at(path, head);
+      // Shrinks after take-off, shrinks further as it comes in under the button, then merges into it
+      const d = Math.hypot(pt.x - to.x, pt.y - to.y);
+      const near = clamp(d / 300, 0, 1), merge = clamp(d / 30, 0, 1);
+      const tk = ease(clamp(head / 420, 0, 1));
+      pose.tilt = 58 * (1 - tk); pose.pitch = 26 * tk;           // from hovering above the bar to flying nose-first
+      const lift = 1.08 - .66 * tk;
+      const s = Math.min(lift, .08 + .34 * ease(near)) * (.3 + .7 * merge);
+      const back = at(path, Math.max(0, head - 26));
+      let dh = pt.deg - back.deg; dh = ((dh + 540) % 360) - 180;
+      bankNow += (clamp(dh / 14, -1, 1) - bankNow) * .12;
+      pose.bank = bankNow;
+      drawTrail(ctx, path, head, head - tailLen, color);
+      placePlane(pt.x, pt.y, pt.deg, s);
+      el.fly.style.opacity = merge;
+      el.send.style.transform = merge < 1 ? `scale(${1 + .07 * (1 - merge)})` : '';
+    });
+    el.send.style.transform = '';
+    el.fly.hidden = true;
+    landed();
+    // the trail drains into the button
+    tween(320, (p) => drawTrail(ctx, path, path.length, path.length - tailLen + tailLen * ease(p), color))
+      .then(() => { c.hidden = true; ctx.clearRect(0, 0, vw, vh); });
+  }
+
+  /* ---------- Button, delivered state, and the send sequence ---------- */
+  let busy = false;
+  const setBtn = (s) => { $('lIdle').hidden = s !== 'idle'; $('lBusy').hidden = s !== 'busy'; $('lDone').hidden = s !== 'done'; };
+  const sync = () => { el.send.disabled = busy || !el.note.value.trim(); };
+
+  // Plane icon now sits in the button
+  function landed() {
+    setBtn('done');
+    el.status.textContent = 'Delivered to Priya';
+    if (!reduce.matches) {
+      $('doneIcon').animate([{ transform: 'scale(.2) rotate(-40deg)', opacity: 0 }, { transform: 'scale(1.25) rotate(8deg)', opacity: 1, offset: .6 }, { transform: 'none', opacity: 1 }], { duration: 460, easing: 'ease-out' });
+      el.send.animate([{ boxShadow: '0 0 0 0 rgba(37,99,235,.5)' }, { boxShadow: '0 0 0 14px rgba(37,99,235,0)' }], { duration: 560, easing: 'ease-out' });
+    }
+  }
+  // The same card opens into the delivered message
+  function deliver() {
+    $('sTime').textContent = time();
+    el.composer.classList.add('is-delivered');
+    el.fMain.inert = true; el.fFoot.inert = true; el.fSent.inert = false; el.fActions.inert = false;
+    el.live.textContent = 'Note delivered to Priya Nair.';
+    setTimeout(() => $('again').focus({ preventScroll: true }), reduce.matches ? 0 : 480);
+  }
+
+  async function send() {
+    const text = el.note.value.trim();
+    if (busy || !text) return;
+    busy = true; sync();
+    el.live.textContent = 'Sending note.';
+    el.status.textContent = 'On its way to Priya';
+    setBtn('busy');
+    el.composer.classList.add('is-sending');
+
+    if (reduce.matches) { await wait(400); landed(); deliver(); return; }
+
+    rig = await printAndFold(text, time());
+
+    // Hand-off: the folded sheet lifts onto the flight layer, turns over and folds up the middle while the
+    // camera leans in, pinches for a beat, then hovers and takes off.
+    toFly();
+    await nextFrames();
+    setDelta(true);
+    await tween(700, (p) => { const e = ease(p); pose.flip = 180 * e; setTent(TENT_FLY * e); pose.tilt = 36 * e; placePlane(pose.cx, pose.cy, 0, 1); });
+    await wait(150);
+    await tween(130, (p) => { setTent(TENT_FLY + 32 * ease(p)); pose.tilt = 36 + 8 * ease(p); placePlane(pose.cx, pose.cy, 0, 1); });
+    await tween(170, (p) => { const e = ease(p); setTent(TENT_FLY + 32 * (1 - e)); pose.tilt = 44 + 6 * e; placePlane(pose.cx, pose.cy, 0, 1); });
+    await tween(620, (p) => { const e = ease(p); pose.tilt = 50 + 8 * e; placePlane(pose.cx, pose.cy - 14 * e, 0, 1 + .08 * e); });   // rises, camera drops
+    await wait(160);
+
+    const s = { x: pose.cx, y: pose.cy };
+    const b = el.send.getBoundingClientRect();
+    await flight({ x: s.x, y: s.y - 14 }, { x: b.left + b.width / 2, y: b.top + b.height / 2 });
+    await wait(900);
+    deliver();
+  }
+
+  function reset(keepText) {
+    el.slot.hidden = true; el.fly.hidden = true; el.trail.hidden = true; el.lift.append(el.sheet); el.sheet.replaceChildren(); el.sheet.style.transform = '';
+    el.composer.classList.remove('is-sending', 'is-delivered');
+    el.fMain.inert = false; el.fFoot.inert = false; el.fSent.inert = true; el.fActions.inert = true;
+    setBtn('idle');
+    if (!keepText) el.note.value = '';
+    busy = false; sync();
+    setTimeout(() => el.note.focus({ preventScroll: true }), reduce.matches ? 0 : 460);
+    el.live.textContent = keepText ? 'Editing sent note.' : 'New note.';
+  }
+
+  /* ---------- Wiring ---------- */
+  if (!/Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent)) $('mod').textContent = 'Ctrl';
+  el.note.addEventListener('input', sync);
+  el.note.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); el.composer.requestSubmit(); } });
+  el.composer.addEventListener('submit', (e) => { e.preventDefault(); send(); });
+  $('edit').addEventListener('click', () => reset(true));
+  $('again').addEventListener('click', () => reset(false));
+  sync();
+})();
+</script>
+
+</body>
+</html>
