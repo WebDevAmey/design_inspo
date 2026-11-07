@@ -30,7 +30,7 @@
   --blue-on: #ffffff;
   --blue-text: #2563eb;
   --ghost: #f3f4f6;
-  --shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 4px 10px -2px rgba(15, 23, 42, .06), 0 24px 48px -16px rgba(15, 23, 42, .22);
+  --shadow: 0 0 0 transparent;
 
   /* paper is a physical object: same colors in both themes */
   --paper: #fdfdfe;
@@ -172,7 +172,7 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
   perspective: 1100px;
   transition: filter .3s ease;
 }
-.slot.open .lift { filter: drop-shadow(0 1px 2px rgba(15, 23, 42, .12)) drop-shadow(0 14px 20px rgba(15, 23, 42, .16)); }
+.slot.open .lift { filter: drop-shadow(0 4px 12px rgba(15, 23, 42, .07)); }
 .sheet { position: absolute; inset: 0; transform-style: preserve-3d; }
 .grp, .pc { position: absolute; inset: 0; transform-style: preserve-3d; }
 .grp > .pc:first-child { transform-style: flat; }
@@ -192,7 +192,9 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
 .grp .face.b.body { background: color-mix(in srgb, #1e293b calc(var(--sh, 0) * 100%), #fbfcfd); }
 .grp .face.b.flap { background: linear-gradient(135deg, color-mix(in srgb, #1e293b calc(var(--sh, 0) * 100%), #f7f8fb), color-mix(in srgb, #1e293b calc(var(--sh, 0) * 100%), #e8ecf2)); }
 .sheet.back .grp .face.f { background-image: linear-gradient(90deg, transparent calc(50% - 1px), rgba(71, 85, 105, .55) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)), linear-gradient(180deg, rgba(0, 0, 0, .055) 0 41%, transparent 41%); }
-.sheet.back .grp:nth-child(2)::before { content: ""; position: absolute; left: calc(var(--sheet-w) / 2 - 6px); top: -86px; width: 12px; height: 88px; background: linear-gradient(90deg, #c4c8d0, #eceef2 50%, #b3b8c2); clip-path: polygon(0 100%, 50% 0, 100% 100%); transform: translateZ(2px); pointer-events: none; }
+.sheet.back .grp::before { content: ""; position: absolute; top: -64px; width: 7px; height: 66px; background: linear-gradient(#e9ebf0, #d4d8e0); transform: translateZ(2px); pointer-events: none; }
+.sheet.back .grp:first-child::before { left: calc(var(--sheet-w) / 2 - 7px); clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+.sheet.back .grp:last-child::before { left: calc(var(--sheet-w) / 2); clip-path: polygon(0 0, 100% 100%, 0 100%); background: linear-gradient(#f3f4f7, #e1e4ea); }
 .sheet.back .grp.r::after { content: ""; position: absolute; left: calc(var(--sheet-w) / 2 - 1px); top: 0; width: 2px; height: 100%; background: linear-gradient(#6b7585, #9aa3b2); opacity: .7; pointer-events: none; transform: translateZ(2px); }
 .grp.l { --sh: var(--shl, 0); }
 .grp.r { --sh: var(--shr, 0); }
@@ -229,7 +231,7 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
   position: fixed; left: 0; top: 0; z-index: 20; pointer-events: none;
   width: var(--sheet-w); height: var(--sheet-h);
   perspective: 1100px;
-  filter: drop-shadow(0 1px 2px rgba(15, 23, 42, .22)) drop-shadow(0 22px 18px rgba(15, 23, 42, .28));
+  filter: drop-shadow(0 6px 14px rgba(15, 23, 42, .08));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -400,7 +402,7 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
     box.keep = kept;
     const ax = (-C / n).toFixed(4), ay = ((right ? -H : H) / n).toFixed(4);
     await nextFrames();
-    await run(box, [{ transform: `translateZ(2px) rotate3d(${ax},${ay},0,0deg)` }, { transform: `translateZ(2px) rotate3d(${ax},${ay},0,180deg)` }], { duration: 850, easing: 'cubic-bezier(.5, 0, .2, 1)' });
+    await run(box, [{ transform: `translateZ(2px) rotate3d(${ax},${ay},0,0deg)` }, { transform: `translateZ(2px) rotate3d(${ax},${ay},0,180deg)` }], { duration: 600, easing: 'cubic-bezier(.5, 0, .2, 1)' });
     box.getAnimations().forEach((an) => { an.commitStyles(); an.cancel(); });
     box.querySelectorAll('.face.f').forEach((x) => { x.style.visibility = 'hidden'; });
     return box;
@@ -424,7 +426,7 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
       feed.push({ offset: (i + .5) / LINES, transform: yAt(i + 1) });
     }
     feed.push({ offset: 1, transform: yAt(LINES) });
-    await run(el.sheet, feed, { duration: 4200, easing: 'linear' });
+    await run(el.sheet, feed, { duration: 2800, easing: 'linear' });
 
     el.sheet.classList.add('paper');                              // 2. receipt becomes paper
     strip.style.clipPath = poly(straight);
@@ -433,16 +435,16 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
     el.slot.classList.add('open');                                // 3. corners in, then in half (stays centered)
     const rig = buildRig(text, stamp);
     await nextFrames();
-    const corner = (n, k) => run(n, [{ transform: `translateZ(1px) rotate3d(-1,${k},0,0deg)` }, { transform: `translateZ(1px) rotate3d(-1,${k},0,180deg)` }], { duration: 800, easing: inOut });
+    const corner = (n, k) => run(n, [{ transform: `translateZ(1px) rotate3d(-1,${k},0,0deg)` }, { transform: `translateZ(1px) rotate3d(-1,${k},0,180deg)` }], { duration: 550, easing: inOut });
     await corner(rig.fr, -1);                                    // 1) top right corner
-    await wait(220);
+    await wait(120);
     await corner(rig.fl, 1);                                     // 2) top left corner
-    await wait(260);
+    await wait(150);
     for (const n of [rig.fl, rig.fr]) n.getAnimations().forEach((an) => { an.commitStyles(); an.cancel(); });
     rig.sr = await sideFold(rig, 'r', text, stamp);              // 3) right side folds in to the center line
-    await wait(220);
+    await wait(120);
     rig.sl = await sideFold(rig, 'l', text, stamp);              // 4) left side folds in
-    await wait(300);
+    await wait(180);
     return rig;
   }
 
@@ -668,8 +670,8 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
     toFly();
     await nextFrames();
     pose.back = true;                                                                                                   // the printed side turns away; faint roof, crease
-    for (const bx of [rig.sr, rig.sl, rig.sr.keep, rig.sl.keep]) { bx.style.transition = 'opacity .9s ease'; bx.style.opacity = 0; }
-    await tween(1000, (p) => { const e = ease(p); tentLR(TENT_FLY * e, TENT_FLY * e); pose.tilt = 58 * e; placePlane(pose.cx, pose.cy - 14 * e, 0, 1 + .08 * e); });   // fold in half while the camera drops
+    for (const bx of [rig.sr, rig.sl, rig.sr.keep, rig.sl.keep]) { bx.style.transition = 'opacity .6s ease'; bx.style.opacity = 0; }
+    await tween(700, (p) => { const e = ease(p); tentLR(TENT_FLY * e, TENT_FLY * e); pose.tilt = 58 * e; placePlane(pose.cx, pose.cy - 14 * e, 0, 1 + .08 * e); });   // fold in half while the camera drops
     await wait(1000);
     await wait(160);
 
