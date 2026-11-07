@@ -402,7 +402,7 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
     box.keep = kept;
     const ax = (-C / n).toFixed(4), ay = ((right ? -H : H) / n).toFixed(4);
     await nextFrames();
-    await run(box, [{ transform: `translateZ(2px) rotate3d(${ax},${ay},0,0deg)` }, { transform: `translateZ(2px) rotate3d(${ax},${ay},0,180deg)` }], { duration: 600, easing: 'cubic-bezier(.5, 0, .2, 1)' });
+    await run(box, [{ transform: `translateZ(2px) rotate3d(${ax},${ay},0,0deg)` }, { transform: `translateZ(2px) rotate3d(${ax},${ay},0,180deg)` }], { duration: 420, easing: 'cubic-bezier(.5, 0, .2, 1)' });
     box.getAnimations().forEach((an) => { an.commitStyles(); an.cancel(); });
     box.querySelectorAll('.face.f').forEach((x) => { x.style.visibility = 'hidden'; });
     return box;
@@ -426,25 +426,25 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
       feed.push({ offset: (i + .5) / LINES, transform: yAt(i + 1) });
     }
     feed.push({ offset: 1, transform: yAt(LINES) });
-    await run(el.sheet, feed, { duration: 2800, easing: 'linear' });
+    await run(el.sheet, feed, { duration: 1700, easing: 'linear' });
 
     el.sheet.classList.add('paper');                              // 2. receipt becomes paper
     strip.style.clipPath = poly(straight);
-    await wait(1300);                                             // hold: the printed message stays readable
+    await wait(1000);                                             // hold: the printed message stays readable
 
     el.slot.classList.add('open');                                // 3. corners in, then in half (stays centered)
     const rig = buildRig(text, stamp);
     await nextFrames();
-    const corner = (n, k) => run(n, [{ transform: `translateZ(1px) rotate3d(-1,${k},0,0deg)` }, { transform: `translateZ(1px) rotate3d(-1,${k},0,180deg)` }], { duration: 550, easing: inOut });
+    const corner = (n, k) => run(n, [{ transform: `translateZ(1px) rotate3d(-1,${k},0,0deg)` }, { transform: `translateZ(1px) rotate3d(-1,${k},0,180deg)` }], { duration: 380, easing: inOut });
     await corner(rig.fr, -1);                                    // 1) top right corner
-    await wait(120);
+    await wait(60);
     await corner(rig.fl, 1);                                     // 2) top left corner
-    await wait(150);
+    await wait(80);
     for (const n of [rig.fl, rig.fr]) n.getAnimations().forEach((an) => { an.commitStyles(); an.cancel(); });
     rig.sr = await sideFold(rig, 'r', text, stamp);              // 3) right side folds in to the center line
-    await wait(120);
+    await wait(60);
     rig.sl = await sideFold(rig, 'l', text, stamp);              // 4) left side folds in
-    await wait(180);
+    await wait(100);
     return rig;
   }
 
@@ -671,8 +671,8 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
     await nextFrames();
     pose.back = true;                                                                                                   // the printed side turns away; faint roof, crease
     for (const bx of [rig.sr, rig.sl, rig.sr.keep, rig.sl.keep]) { bx.style.transition = 'opacity .6s ease'; bx.style.opacity = 0; }
-    await tween(700, (p) => { const e = ease(p); tentLR(TENT_FLY * e, TENT_FLY * e); pose.tilt = 58 * e; placePlane(pose.cx, pose.cy - 14 * e, 0, 1 + .08 * e); });   // fold in half while the camera drops
-    await wait(1000);
+    await tween(500, (p) => { const e = ease(p); tentLR(TENT_FLY * e, TENT_FLY * e); pose.tilt = 58 * e; placePlane(pose.cx, pose.cy - 14 * e, 0, 1 + .08 * e); });   // fold in half while the camera drops
+    await wait(700);
     await wait(160);
 
     const s = { x: pose.cx, y: pose.cy };
