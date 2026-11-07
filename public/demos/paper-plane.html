@@ -219,7 +219,7 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
 .face.f::before { content: ""; position: absolute; inset: 18px; border: 1px dashed #e0e5ed; border-radius: 4px; opacity: 1; pointer-events: none; }
 .sheet.paper .face.f::before { opacity: 1; }
 .rc-text { display: -webkit-box; -webkit-line-clamp: 10; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-.sheet.back .face.f .rc-text, .sheet.back .face.f .pp-date, .sheet.back .face.f .pp-stamp, .sheet.back .face.f .pp-pm { opacity: .13 !important; }
+.sheet.back .face.f .rc-text, .sheet.back .face.f .pp-date, .sheet.back .face.f .pp-stamp, .sheet.back .face.f .pp-pm { opacity: .04 !important; }
 
 /* Flight layers: comet trail on a canvas, the folded plane on a perspective layer above it */
 .trail { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 19; }
@@ -410,7 +410,7 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
   const clampN = clamp;
   function placePlane(x, y, deg, sc) {
     el.fly.style.transform = `translate(${x - W / 2}px, ${y - H / 2}px) scale(${sc})`;
-    el.sheet.classList.toggle('back', pose.flip > 90);
+    el.sheet.classList.toggle('back', true);
     el.sheet.style.transform = `rotateX(${pose.tilt}deg) rotateZ(${deg}deg) rotateX(${pose.pitch}deg) rotateY(${pose.bank * 30 + pose.flip}deg)`;
     el.sheet.style.setProperty('--shl', Math.max(0, .02 - .06 * pose.bank).toFixed(3));
     el.sheet.style.setProperty('--shr', clampN(.09 + .14 * pose.bank, 0, .3).toFixed(3));
@@ -620,10 +620,10 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
     toFly();
     await nextFrames();
     setDelta(true);
-    await tween(700, (p) => { const e = ease(p); pose.flip = 180 * e; setTent(TENT_FLY * e); pose.tilt = 36 * e; placePlane(pose.cx, pose.cy, 0, 1); });
+    await tween(700, (p) => { const e = ease(p); setTent(-TENT_FLY * e); pose.tilt = 36 * e; placePlane(pose.cx, pose.cy, 0, 1); });
     await wait(150);
-    await tween(130, (p) => { setTent(TENT_FLY + 32 * ease(p)); pose.tilt = 36 + 8 * ease(p); placePlane(pose.cx, pose.cy, 0, 1); });
-    await tween(170, (p) => { const e = ease(p); setTent(TENT_FLY + 32 * (1 - e)); pose.tilt = 44 + 6 * e; placePlane(pose.cx, pose.cy, 0, 1); });
+    await tween(130, (p) => { setTent(-(TENT_FLY + 32 * ease(p))); pose.tilt = 36 + 8 * ease(p); placePlane(pose.cx, pose.cy, 0, 1); });
+    await tween(170, (p) => { const e = ease(p); setTent(-(TENT_FLY + 32 * (1 - e))); pose.tilt = 44 + 6 * e; placePlane(pose.cx, pose.cy, 0, 1); });
     await tween(620, (p) => { const e = ease(p); pose.tilt = 50 + 8 * e; placePlane(pose.cx, pose.cy - 14 * e, 0, 1 + .08 * e); });   // rises, camera drops
     await wait(160);
 
