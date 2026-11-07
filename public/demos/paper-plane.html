@@ -17,7 +17,7 @@
    white plane, and flies the plane through two loops (top right, then bottom left), under the bar and
    up into the Send button. The same card then opens into the delivered message. */
 :root {
-  --bg: #aeb6c4;
+  --bg: #ffffff;
   --surface: #ffffff;
   --wash: #f8fafc;
   --fold: #eef2f7;
@@ -30,38 +30,22 @@
   --blue-on: #ffffff;
   --blue-text: #2563eb;
   --ghost: #f3f4f6;
-  --shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 12px 28px -14px rgba(15, 23, 42, .16);
+  --shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 4px 10px -2px rgba(15, 23, 42, .06), 0 24px 48px -16px rgba(15, 23, 42, .22);
 
   /* paper is a physical object: same colors in both themes */
-  --paper: #ffffff;
+  --paper: #fdfdfe;
   --paper-ink: #1e293b;
   --paper-mute: #64748b;
-  --thermal: #f1f3f7;
+  --thermal: #f6f7fa;
 
   --font-ui: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --r-card: 20px;
   --r-btn: 10px;
   --bar-h: 56px;
-  --sheet-w: 232px;
-  --sheet-h: 288px;
+  --sheet-w: 272px;
+  --sheet-h: 352px;
   --ease: cubic-bezier(.5, 0, .2, 1);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #05070c; --surface: #111827; --wash: #0e1422; --fold: #172033; --ghost: #1a2336;
-    --ink: #e5eaf3; --muted: #94a3b8; --line: #243044; --line-strong: #34425a;
-    --blue-text: #6ea0ff;
-    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 14px 30px -14px rgba(0, 0, 0, .6);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #05070c; --surface: #111827; --wash: #0e1422; --fold: #172033; --ghost: #1a2336;
-  --ink: #e5eaf3; --muted: #94a3b8; --line: #243044; --line-strong: #34425a;
-  --blue-text: #6ea0ff;
-  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 14px 30px -14px rgba(0, 0, 0, .6);
-  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -81,7 +65,7 @@ button, textarea { font: inherit; color: inherit; }
 .stage {
   min-height: 100svh;
   display: grid; justify-items: center; align-content: start;
-  padding-block: max(24px, calc(100svh - 374px - 100px)) 100px;
+  padding-block: max(24px, calc(100svh - 438px - 100px)) 100px;
 }
 .panel { width: min(100%, 400px); }
 .deck {
@@ -186,17 +170,18 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
   position: absolute; left: 0; bottom: 14px;
   width: var(--sheet-w); height: var(--sheet-h);
   perspective: 1100px;
-  filter: drop-shadow(0 10px 12px rgba(15, 23, 42, .12));
+  transition: filter .3s ease;
 }
+.slot.open .lift { filter: drop-shadow(0 1px 2px rgba(15, 23, 42, .12)) drop-shadow(0 14px 20px rgba(15, 23, 42, .16)); }
 .sheet { position: absolute; inset: 0; transform-style: preserve-3d; }
 .grp, .pc { position: absolute; inset: 0; transform-style: preserve-3d; }
 .grp > .pc:first-child { transform-style: flat; }
 .face {
   position: absolute; left: 0; top: 0;
   width: var(--sheet-w); height: var(--sheet-h);
-  padding: 22px 24px;
+  padding: 112px 34px 22px;
   background: var(--paper); color: var(--paper-ink);
-  font: 400 13px/1.55 var(--font-mono);
+  font: 500 14px/1.4 var(--font-mono);
   backface-visibility: hidden; -webkit-backface-visibility: hidden;
   transition: clip-path .26s ease, background-color .26s ease;
 }
@@ -207,23 +192,34 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
 .sheet.paper .grp .face.f { background-color: color-mix(in srgb, #1e293b calc(var(--sh, 0) * 100%), var(--paper)); }
 .grp .face.b.body { background: color-mix(in srgb, #1e293b calc(var(--sh, 0) * 100%), #fbfcfd); }
 .grp .face.b.flap { background: linear-gradient(135deg, color-mix(in srgb, #1e293b calc(var(--sh, 0) * 100%), #f7f8fb), color-mix(in srgb, #1e293b calc(var(--sh, 0) * 100%), #e8ecf2)); }
-.sheet.back .face.f .rc-text, .sheet.back .face.f .rc-to { opacity: .13; }
 .sheet.back .grp .face.f { background-image: linear-gradient(90deg, transparent calc(50% - 1px), rgba(71, 85, 105, .55) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)), linear-gradient(180deg, rgba(100, 116, 139, .2) 0 41%, transparent 41%); }
 .sheet.back .grp.r::after { content: ""; position: absolute; left: calc(var(--sheet-w) / 2 - 1px); top: 0; width: 2px; height: 100%; background: linear-gradient(#6b7585, #9aa3b2); opacity: .7; pointer-events: none; transform: translateZ(2px); }
 .grp.l { --sh: var(--shl, 0); }
 .grp.r { --sh: var(--shr, 0); }
 .face.f::after {
   content: ""; position: absolute; inset: 9px;
-  border: 1.5px dashed var(--line-strong); border-radius: 4px;
+  border: 1.5px dashed #c3ccda; border-radius: 6px;
+  background:
+    repeating-linear-gradient(90deg, #d5dbe6 0 1px, transparent 1px 9px) top 3px left 6px / calc(100% - 12px) 5px no-repeat,
+    repeating-linear-gradient(90deg, #d5dbe6 0 1px, transparent 1px 9px) bottom 3px left 6px / calc(100% - 12px) 5px no-repeat,
+    repeating-linear-gradient(0deg, #d5dbe6 0 1px, transparent 1px 9px) left 3px top 6px / 5px calc(100% - 12px) no-repeat,
+    repeating-linear-gradient(0deg, #d5dbe6 0 1px, transparent 1px 9px) right 3px top 6px / 5px calc(100% - 12px) no-repeat;
   opacity: 0; transition: opacity .26s ease;
 }
+.pp-date, .pp-stamp, .pp-pm { position: absolute; opacity: 0; transition: opacity .26s ease; }
+.sheet.paper .pp-date { opacity: 1; }
+.sheet.paper .pp-stamp { opacity: 1; }
+.sheet.paper .pp-pm { opacity: .75; }
+.pp-date { left: 34px; top: 38px; font-size: 10.5px; letter-spacing: .07em; color: var(--paper-mute); }
+.pp-stamp { right: 30px; top: 30px; width: 50px; height: 62px; padding: 3px; border-radius: 3px; background: #f2f5fa; border: 1.5px dashed #cdd5e1; z-index: 2; }
+.pp-stamp i { display: grid; place-items: center; align-content: center; gap: 4px; width: 100%; height: 100%; border-radius: 2px; background: linear-gradient(160deg, #4a82f7, #1f4fd8); color: #fff; font: 700 5.5px/1 var(--font-mono); letter-spacing: .08em; font-style: normal; }
+.pp-pm { right: 58px; top: 58px; width: 74px; height: 36px; z-index: 4; }
+
 .sheet.paper .face.f::after { opacity: 1; }
-.rc-top, .rc-bot { display: flex; justify-content: space-between; font-size: 10px; letter-spacing: .08em; color: var(--paper-mute); transition: opacity .26s ease; }
-.rc-to { margin-top: 10px; color: var(--paper-mute); }
-.rc-rule { margin: 9px 0; border-top: 1.5px dotted #94a3b8; transition: opacity .26s ease; }
-.rc-text { display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-.rc-bot { margin-top: 12px; }
-.sheet.paper :is(.rc-top, .rc-bot, .rc-rule) { opacity: 0; }
+.face.f::before { content: ""; position: absolute; inset: 18px; border: 1px dashed #e0e5ed; border-radius: 4px; opacity: 0; transition: opacity .26s ease; pointer-events: none; }
+.sheet.paper .face.f::before { opacity: 1; }
+.rc-text { display: -webkit-box; -webkit-line-clamp: 10; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.sheet.back .face.f .rc-text, .sheet.back .face.f .pp-date, .sheet.back .face.f .pp-stamp, .sheet.back .face.f .pp-pm { opacity: .13 !important; }
 
 /* Flight layers: comet trail on a canvas, the folded plane on a perspective layer above it */
 .trail { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 19; }
@@ -231,7 +227,7 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
   position: fixed; left: 0; top: 0; z-index: 20; pointer-events: none;
   width: var(--sheet-w); height: var(--sheet-h);
   perspective: 1100px;
-  filter: drop-shadow(0 22px 18px rgba(15, 23, 42, .30));
+  filter: drop-shadow(0 1px 2px rgba(15, 23, 42, .22)) drop-shadow(0 22px 18px rgba(15, 23, 42, .28));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -251,18 +247,18 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
       <form class="composer" id="composer" autocomplete="off">
         <div class="fold f-main" id="fMain"><div>
           <div class="c-head">
-            <span class="chip" aria-hidden="true">PN</span>
-            <span>To <strong>Priya Nair</strong></span>
+            <span class="chip" aria-hidden="true">PS</span>
+            <span>To <strong>Parth Sharma</strong></span>
           </div>
           <div class="c-body">
-            <label class="sr" for="note">Note to Priya Nair</label>
+            <label class="sr" for="note">Note to Parth Sharma</label>
             <textarea class="note" id="note" rows="4" placeholder="Write a quick note…">Thanks for covering the Thursday handover. The freezer alarm is fixed and the sample log is up to date.</textarea>
           </div>
         </div></div>
 
         <div class="fold f-sent" id="fSent" inert><div>
           <div class="s-head">
-            <span class="s-to">Sent to <span class="chip" aria-hidden="true">PN</span> Priya Nair</span>
+            <span class="s-to">Sent to <span class="chip" aria-hidden="true">PS</span> Parth Sharma</span>
             <time id="sTime">12:00 PM</time>
           </div>
           <p class="s-note">She reads notes at the start of her day and replies from her own inbox. Keep an eye on your email.</p>
@@ -272,7 +268,7 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
           <div class="c-foot">
             <div class="slotline">
               <span class="hint"><kbd id="mod">⌘</kbd><kbd>Enter</kbd> to send</span>
-              <span class="status" id="status" aria-hidden="true">On its way to Priya</span>
+              <span class="status" id="status" aria-hidden="true">On its way to Parth</span>
             </div>
             <button class="send" id="send" type="submit">
               <span class="l l-idle" id="lIdle">
@@ -327,7 +323,7 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
   const time = () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
   /* ---------- Sheet: print, paper, fold ---------- */
-  const W = 232, H = 288, C = W / 2, TEETH = 14, SHIFT = W / 4;
+  const W = 272, H = 352, C = W / 2, TEETH = 14, SHIFT = W / 4;
   const poly = (pts) => 'polygon(' + pts.map(([x, y]) => x + 'px ' + y + 'px').join(',') + ')';
   const mirror = (pts, cx) => pts.map(([x, y]) => [2 * cx - x, y]);
   const jagged = [[0, 0], [W, 0]], straight = [[0, 0], [W, 0]];
@@ -336,10 +332,12 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
   function face(cls, text, stamp) {
     const f = document.createElement('div');
     f.className = 'face ' + cls;
-    f.innerHTML = '<div class="rc-top"><span>NOTE RECEIPT</span><span class="t"></span></div>' +
-      '<div class="rc-to">To Priya Nair</div><div class="rc-rule"></div><div class="rc-text"></div>' +
-      '<div class="rc-rule"></div><div class="rc-bot"><span>BY AIR MAIL</span><span>***</span></div>';
-    f.querySelector('.t').textContent = stamp;
+    f.innerHTML =
+      '<div class="pp-date"></div>' +
+      '<div class="pp-stamp"><i><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2.5 11 13"/><path d="m21.5 2.5-6.6 19-3.9-8.5-8.5-3.9Z"/></svg>AIR MAIL</i></div>' +
+      '<svg class="pp-pm" viewBox="0 0 74 36" fill="none" stroke="#8793a6" stroke-width=".9"><path d="M2 9c5-4 8 4 13 0s8 4 13 0M2 18c5-4 8 4 13 0s8 4 13 0M2 27c5-4 8 4 13 0s8 4 13 0"/><circle cx="52" cy="18" r="16"/><circle cx="52" cy="18" r="12"/><text x="52" y="17" text-anchor="middle" font-size="5" font-family="monospace" fill="#8793a6" stroke="none">NOV</text><text x="52" y="24" text-anchor="middle" font-size="5" font-family="monospace" fill="#8793a6" stroke="none">AIR MAIL</text></svg>' +
+      '<div class="rc-text"></div>';
+    f.querySelector('.pp-date').textContent = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase();
     f.querySelector('.rc-text').textContent = text;
     return f;
   }
@@ -386,11 +384,11 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
     el.slot.hidden = false;
 
     await wait(120);                                             // 1. print out of the bar
-    await run(el.sheet, [{ transform: 'translateY(calc(100% + 16px))' }, { transform: 'translateY(0)' }], { duration: 700, easing: 'steps(18, end)' });
+    await run(el.sheet, [{ transform: 'translateY(calc(100% + 16px))' }, { transform: 'translateY(0)' }], { duration: 1100, easing: 'cubic-bezier(.3,.5,.25,1)' });
 
     el.sheet.classList.add('paper');                              // 2. receipt becomes paper
     strip.style.clipPath = poly(straight);
-    await wait(280);
+    await wait(1300);                                             // hold: the printed message stays readable
 
     el.slot.classList.add('open');                                // 3. corners in, then in half (stays centered)
     const rig = buildRig(text, stamp);
@@ -562,7 +560,7 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
       const near = clamp(d / 300, 0, 1), merge = clamp(d / 30, 0, 1);
       const tk = ease(clamp(head / 420, 0, 1));
       pose.tilt = 58 * (1 - tk); pose.pitch = 26 * tk;           // from hovering above the bar to flying nose-first
-      const lift = 1.08 - .66 * tk;
+      const lift = 1.08 - .70 * tk;
       const s = Math.min(lift, .08 + .34 * ease(near)) * (.3 + .7 * merge);
       const back = at(path, Math.max(0, head - 26));
       let dh = pt.deg - back.deg; dh = ((dh + 540) % 360) - 180;
@@ -589,7 +587,7 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
   // Plane icon now sits in the button
   function landed() {
     setBtn('done');
-    el.status.textContent = 'Delivered to Priya';
+    el.status.textContent = 'Delivered to Parth';
     if (!reduce.matches) {
       $('doneIcon').animate([{ transform: 'scale(.2) rotate(-40deg)', opacity: 0 }, { transform: 'scale(1.25) rotate(8deg)', opacity: 1, offset: .6 }, { transform: 'none', opacity: 1 }], { duration: 460, easing: 'ease-out' });
       el.send.animate([{ boxShadow: '0 0 0 0 rgba(37,99,235,.5)' }, { boxShadow: '0 0 0 14px rgba(37,99,235,0)' }], { duration: 560, easing: 'ease-out' });
@@ -600,7 +598,7 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
     $('sTime').textContent = time();
     el.composer.classList.add('is-delivered');
     el.fMain.inert = true; el.fFoot.inert = true; el.fSent.inert = false; el.fActions.inert = false;
-    el.live.textContent = 'Note delivered to Priya Nair.';
+    el.live.textContent = 'Note delivered to Parth Sharma.';
     setTimeout(() => $('again').focus({ preventScroll: true }), reduce.matches ? 0 : 480);
   }
 
@@ -609,7 +607,7 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
     if (busy || !text) return;
     busy = true; sync();
     el.live.textContent = 'Sending note.';
-    el.status.textContent = 'On its way to Priya';
+    el.status.textContent = 'On its way to Parth';
     setBtn('busy');
     el.composer.classList.add('is-sending');
 
