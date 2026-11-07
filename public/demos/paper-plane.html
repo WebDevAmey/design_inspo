@@ -384,7 +384,7 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
     el.slot.hidden = false;
 
     await wait(120);                                             // 1. print out of the bar
-    await run(el.sheet, [{ transform: 'translateY(calc(100% + 16px))' }, { transform: 'translateY(0)' }], { duration: 1100, easing: 'cubic-bezier(.3,.5,.25,1)' });
+    await run(el.sheet, [{ transform: 'translateY(calc(100% + 16px))' }, { transform: 'translateY(0)' }], { duration: 2000, easing: 'cubic-bezier(.35,.45,.3,1)' });
 
     el.sheet.classList.add('paper');                              // 2. receipt becomes paper
     strip.style.clipPath = poly(straight);
@@ -394,10 +394,10 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
     const rig = buildRig(text, stamp);
     await nextFrames();
     await Promise.all([
-      run(rig.fl, [{ transform: 'translateZ(1px) rotate3d(-1,1,0,0deg)' }, { transform: 'translateZ(1px) rotate3d(-1,1,0,180deg)' }], { duration: 380, easing: inOut }),
-      run(rig.fr, [{ transform: 'translateZ(1px) rotate3d(-1,-1,0,0deg)' }, { transform: 'translateZ(1px) rotate3d(-1,-1,0,180deg)' }], { duration: 380, easing: inOut }),
+      run(rig.fl, [{ transform: 'translateZ(1px) rotate3d(-1,1,0,0deg)' }, { transform: 'translateZ(1px) rotate3d(-1,1,0,180deg)' }], { duration: 800, easing: inOut }),
+      run(rig.fr, [{ transform: 'translateZ(1px) rotate3d(-1,-1,0,0deg)' }, { transform: 'translateZ(1px) rotate3d(-1,-1,0,180deg)' }], { duration: 800, easing: inOut }),
     ]);
-    await wait(60);
+    await wait(250);
     for (const n of [rig.fl, rig.fr]) n.getAnimations().forEach((an) => { an.commitStyles(); an.cancel(); });
     return rig;
   }
@@ -620,11 +620,11 @@ kbd { font: 500 11px/1 var(--font-ui); border: 1px solid var(--line); background
     toFly();
     await nextFrames();
     setDelta(true);
-    await tween(700, (p) => { const e = ease(p); setTent(-TENT_FLY * e); pose.tilt = 36 * e; placePlane(pose.cx, pose.cy, 0, 1); });
-    await wait(150);
+    await tween(1300, (p) => { const e = ease(p); setTent(-TENT_FLY * e); pose.tilt = 36 * e; placePlane(pose.cx, pose.cy, 0, 1); });
+    await wait(300);
     await tween(130, (p) => { setTent(-(TENT_FLY + 32 * ease(p))); pose.tilt = 36 + 8 * ease(p); placePlane(pose.cx, pose.cy, 0, 1); });
     await tween(170, (p) => { const e = ease(p); setTent(-(TENT_FLY + 32 * (1 - e))); pose.tilt = 44 + 6 * e; placePlane(pose.cx, pose.cy, 0, 1); });
-    await tween(620, (p) => { const e = ease(p); pose.tilt = 50 + 8 * e; placePlane(pose.cx, pose.cy - 14 * e, 0, 1 + .08 * e); });   // rises, camera drops
+    await tween(900, (p) => { const e = ease(p); pose.tilt = 50 + 8 * e; placePlane(pose.cx, pose.cy - 14 * e, 0, 1 + .08 * e); });   // rises, camera drops
     await wait(160);
 
     const s = { x: pose.cx, y: pose.cy };
