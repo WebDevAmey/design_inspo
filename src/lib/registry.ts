@@ -6,8 +6,8 @@ export type Demo = {
   tags: string[];
   /** Standalone HTML page rendered inside a sandboxed frame. */
   src: string;
-  /** Frame height in px on desktop and on phones. */
-  height: { desktop: number; mobile: number };
+  /** The size the demo is laid out at. Cards show it scaled down; the expanded view scales it to fit the screen. */
+  size: { w: number; h: number };
   hint?: string;
 };
 
@@ -20,7 +20,7 @@ export const demos: Demo[] = [
       "A message composer that sends itself like a letter. The card collapses to a bar, prints the note, folds it into a paper plane and flies it into the Send button.",
     tags: ["micro-interaction", "3D transforms", "canvas trail"],
     src: "/demos/paper-plane.html",
-    height: { desktop: 760, mobile: 720 },
+    size: { w: 900, h: 760 },
     hint: "Press Send",
   },
   {
@@ -31,7 +31,7 @@ export const demos: Demo[] = [
       "A cream cassette deck you load by hand. Eject a tape, pull it out of the side slot, set it down anywhere and slide another one in. Spring-driven motion, piano-key sounds, and your own audio played through the deck's hiss and wow.",
     tags: ["skeuomorphic", "springs and drag", "web audio"],
     src: "/demos/cassette-deck.html",
-    height: { desktop: 600, mobile: 260 },
+    size: { w: 1240, h: 660 },
     hint: "Press the first brown key",
   },
 ];
