@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Cassette Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Chakra+Petch:wght@400;500;600&display=swap">
+<style>
+/* The deck from the reference, fixed in place on a white ground, inside a 1340x650 stage.
+   Left: full-size cassettes (same size as the one behind the glass). They travel in and out through a slot in the left side.
+   Top keys (brown, left): 1 eject, 2 play / pause, 3 stop. Body 720x540 at (560,44). */
+:root {
+  --ground: #ffffff;
+  --rim: #e6ddce;
+  --hair: rgba(110, 86, 56, .30);
+  --copper: #b98a58;
+  --taupe: #645a50;
+  --ink: #3d342c;
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  --font: "Chakra Petch", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--ground); color: var(--ink);
+  font: 400 14px/1.4 var(--font);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px;
+  -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+button:focus-visible, [role="slider"]:focus-visible, .tp:focus-visible { outline: 2px solid #e28a2c; outline-offset: 3px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+main { width: 100%; display: flex; justify-content: center; }
+#fit { width: 100%; max-width: 1400px; position: relative; }
+.stage { position: absolute; left: 0; top: 0; width: 1340px; height: 650px; transform-origin: 0 0; -webkit-user-select: none; user-select: none; }
+.floor { position: absolute; left: 544px; top: 556px; width: 740px; height: 84px; pointer-events: none;
+  background: radial-gradient(50% 40% at 50% 30%, rgba(60,40,20,.2), rgba(60,40,20,0) 100%); filter: blur(4px); }
+
+/* ---------- Cassettes (beneath the body, so they disappear into the side slot) ---------- */
+#rack { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.tp { position: absolute; left: 0; top: 0; width: 400px; height: 196px; pointer-events: auto; cursor: grab; touch-action: none; transform-origin: 50% 50%; will-change: transform;
+  filter: drop-shadow(0 1px 1px rgba(40,25,10,.3)) drop-shadow(0 10px 12px rgba(40,25,10,.22)); }
+.tp:active { cursor: grabbing; }
+.tp svg { display: block; width: 400px; height: 196px; }
+.tp.inside { pointer-events: none; }
+/* lifted in the hand: a softer, longer shadow fades in (opacity only) */
+.tp::after { content: ""; position: absolute; left: 14px; right: 14px; top: 20px; bottom: 0; z-index: -1; border-radius: 16px; box-shadow: 0 26px 30px -8px rgba(40,25,10,.38); opacity: 0; transition: opacity 240ms var(--ease-out); }
+.tp.lift::after { opacity: 1; }
+
+/* ---------- Body: front face plus an extruded shell, so the top and left side read in depth ---------- */
+.side { position: absolute; left: 544px; top: 30px; width: 720px; height: 540px; border-radius: 72px; z-index: 1;
+  background: linear-gradient(90deg, rgba(80,58,36,.20) 0%, rgba(80,58,36,0) 7%), linear-gradient(180deg, #f3ede3 0%, #e6dccc 5%, #d3c6b2 100%);
+  box-shadow: 0 0 0 1px rgba(105,82,54,.32), inset 1px 1.5px 0 rgba(255,255,255,.75),
+              0 2px 2px rgba(60,40,20,.10), 0 14px 22px -8px rgba(60,40,20,.22), 0 40px 52px -20px rgba(60,40,20,.30), 0 76px 96px -46px rgba(60,40,20,.34); }
+.body { position: absolute; left: 560px; top: 44px; width: 720px; height: 540px; border-radius: 72px; z-index: 1;
+  background: linear-gradient(180deg, #f1eadf 0%, #e9e0d2 55%, #dfd4c3 100%);
+  box-shadow: 0 0 0 1px rgba(105,82,54,.36), inset 0 1.5px 0 rgba(255,255,255,.9), inset 1.5px 0 0 rgba(255,255,255,.5), inset 0 -2px 0 rgba(120,92,56,.14), inset 0 -16px 26px rgba(120,92,56,.10), -2px -2px 3px rgba(60,40,20,.12); }
+.feet i { position: absolute; top: 538px; height: 12px; border-radius: 0 0 8px 8px; background: linear-gradient(#cfc2ad, #b9ab95); box-shadow: 0 0 0 1px rgba(110,86,56,.26); }
+.feet i:nth-child(1) { left: 136px; width: 72px; } .feet i:nth-child(2) { left: 520px; width: 96px; }
+/* loading slot cut into the left side wall */
+.slot { position: absolute; left: 3px; top: 210px; width: 8px; height: 206px; border-radius: 4px; background: linear-gradient(90deg, #1f1813, #3d3129); box-shadow: inset 0 2px 4px rgba(0,0,0,.65), 0 0 0 1px rgba(110,86,56,.28), 1px 0 0 rgba(255,255,255,.4); }
+
+/* Three brown keys standing in the top surface, as in the reference: lighter top face, darker front, clipped where they enter the shell */
+.tabwell { position: absolute; left: 0; top: -40px; width: 720px; height: 48px; overflow: hidden; pointer-events: none; }
+.tab { position: absolute; top: 12px; width: 84px; height: 40px; border-radius: 6px 6px 2px 2px; pointer-events: auto;
+  background: linear-gradient(180deg, #cdc1b0 0, #c2b5a2 7px, #a99a86 8px, #9a8b77 100%);
+  box-shadow: inset 0 0 0 1px rgba(78,60,42,.5), inset 0 1px 0 1px rgba(255,246,232,.35), inset 0 -10px 12px -8px rgba(50,35,20,.35), 0 2px 3px rgba(60,40,20,.22);
+  transition: transform 80ms var(--ease-out), box-shadow 80ms var(--ease-out); }
+#kEject { left: 152px; } #kPlay { left: 248px; } #kStop { left: 344px; }
+.tab:active, .tab[aria-pressed="true"] { transform: translateY(6px); box-shadow: inset 0 0 0 1px rgba(78,60,42,.5), inset 0 2px 3px rgba(40,28,16,.35), 0 1px 1px rgba(60,40,20,.2); }
+
+.plate { position: absolute; inset: 16px; border-radius: 58px; background: linear-gradient(180deg, #f2ebe0, #e8dfd0 70%, #e2d8c7);
+  box-shadow: 0 0 0 1.5px rgba(185,138,88,.9), 0 1px 0 1.5px rgba(255,255,255,.75), inset 0 1.5px 1px rgba(255,255,255,.8), inset 0 -3px 6px rgba(140,110,70,.12); }
+.plate::after { content: ""; position: absolute; inset: 8px; border-radius: 50px; border: 1px solid rgba(185,138,88,.45); pointer-events: none; }
+
+/* ---------- Display ---------- */
+.lcd { position: absolute; left: 48px; top: 48px; width: 440px; height: 120px; border-radius: 22px; overflow: hidden; background: #221a15;
+  box-shadow: 0 0 0 6px var(--rim), 0 0 0 7px var(--hair), 0 1px 0 7px rgba(255,255,255,.7), inset 0 2px 6px rgba(0,0,0,.8); }
+.lcd canvas { position: absolute; left: 0; top: 0; width: 440px; height: 120px; }
+
+/* ---------- Right column ---------- */
+.knob-wrap { position: absolute; left: 596px; top: 124px; width: 0; height: 0; }
+.bezel { position: absolute; left: -76px; top: -76px; width: 152px; height: 152px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #ddd1bf, #c7b9a3);
+  box-shadow: 0 0 0 1px var(--hair), inset 0 4px 9px rgba(80,55,28,.38), inset 0 -2px 3px rgba(255,255,255,.6), 0 1px 0 1px rgba(255,255,255,.75); }
+.ring { position: absolute; left: -76px; top: -76px; width: 152px; height: 152px; border-radius: 50%;
+  background: conic-gradient(from -135deg, #f3a24a 0deg, #ffb663 calc(var(--v) * 270deg), rgba(90,70,45,.18) calc(var(--v) * 270deg) 270deg, transparent 270deg);
+  -webkit-mask: radial-gradient(circle, transparent 66px, #000 67px 70px, transparent 71px); mask: radial-gradient(circle, transparent 66px, #000 67px 70px, transparent 71px);
+  filter: drop-shadow(0 0 4px rgba(255,140,40,.75)); }
+.knob { position: absolute; left: -62px; top: -62px; width: 124px; height: 124px; border-radius: 50%; cursor: grab; touch-action: none;
+  box-shadow: 0 1px 1px rgba(60,40,20,.35), 0 6px 10px -2px rgba(60,40,20,.35), 0 16px 22px -8px rgba(60,40,20,.35); }
+.knob:active { cursor: grabbing; }
+.knob .face { position: absolute; inset: 0; border-radius: 50%; transform: rotate(calc(var(--v) * 270deg - 135deg));
+  background: repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,.045) 0 1px, transparent 1px 3px),
+              conic-gradient(from 30deg, #d0c5b3, #f4eee3, #ada08c, #ebe2d2, #b8ab95, #f2e9da, #d0c5b3);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.5), inset 0 0 12px rgba(90,70,40,.22); }
+.knob .face::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: repeating-conic-gradient(rgba(60,45,30,.22) 0 1.1deg, rgba(255,255,255,.18) 1.1deg 3deg); -webkit-mask: radial-gradient(circle, transparent 55px, #000 56px); mask: radial-gradient(circle, transparent 55px, #000 56px); }
+
+.sbtn { position: absolute; top: 222px; width: 64px; height: 62px; border-radius: 14px; display: grid; place-items: center; color: #675c52;
+  background: linear-gradient(180deg, #f7f2ea, #e9e0d3);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 0 0 1px rgba(110,86,56,.28), 0 4px 0 #cbbfac, 0 4px 0 1px rgba(110,86,56,.25), 0 7px 7px -1px rgba(60,40,20,.3);
+  transition: transform 70ms var(--ease-out), box-shadow 70ms var(--ease-out), color 160ms; }
+.sbtn svg { filter: drop-shadow(0 1px 0 rgba(255,255,255,.75)); }
+.sbtn:active, .sbtn[aria-pressed="true"] { transform: translateY(3px); box-shadow: inset 0 1px 3px rgba(90,62,30,.2), 0 0 0 1px rgba(110,86,56,.28), 0 1px 0 #cbbfac, 0 1px 0 1px rgba(110,86,56,.25), 0 2px 2px rgba(60,40,20,.25); }
+.sbtn[aria-pressed="true"] { color: #c47a22; }
+#loud { left: 520px; } #nr { left: 608px; }
+.grille { position: absolute; left: 524px; top: 312px; width: 144px; height: 96px;
+  background: radial-gradient(circle, #4f453c 0 2.3px, rgba(79,69,60,.3) 2.6px, transparent 3px) 0 0 / 12px 12px; }
+.led { position: absolute; left: 520px; top: 456px; width: 12px; height: 12px; border-radius: 50%; background: #bfae95; box-shadow: inset 0 1px 1px rgba(0,0,0,.25), 0 0 0 1px var(--hair); transition: background 240ms, box-shadow 240ms; }
+.led.on { background: #ffb256; box-shadow: 0 0 0 1px rgba(255,150,50,.5), 0 0 9px 2px rgba(255,150,50,.65); }
+.port { position: absolute; left: 616px; top: 448px; width: 56px; height: 28px; border-radius: 14px; background: #3a312a; box-shadow: 0 0 0 3px #d6cab7, 0 0 0 4px var(--hair), inset 0 2px 4px rgba(0,0,0,.6); }
+.port::after { content: ""; position: absolute; left: 10px; right: 10px; top: 10px; height: 8px; border-radius: 4px; background: #cdc0ab; }
+
+/* ---------- Cassette window behind smoked glass ---------- */
+.win { position: absolute; left: 58px; top: 192px; width: 420px; height: 216px; border-radius: 22px; overflow: hidden;
+  background: linear-gradient(180deg, #2c231d, #1d1713);
+  box-shadow: 0 0 0 2px var(--copper), 0 0 0 7px var(--rim), 0 0 0 8px var(--hair), 0 1px 0 8px rgba(255,255,255,.7), inset 0 4px 12px rgba(0,0,0,.7); }
+.mech { position: absolute; inset: 0; }
+.cas { position: absolute; left: 10px; top: 10px; width: 400px; height: 196px; transform: translateX(-480px); filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
+.cas canvas, .cas svg { position: absolute; left: 0; top: 0; width: 400px; height: 196px; display: block; }
+.smoke { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(120,78,38,.34), rgba(90,56,26,.42)); mix-blend-mode: multiply; }
+.doorglass { position: absolute; inset: 0; border-radius: 22px; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(255,220,180,.12), inset 0 0 0 3px rgba(0,0,0,.25), inset 0 16px 24px -12px rgba(0,0,0,.5); }
+.wscrew { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #8a7a68, #3e3229); box-shadow: inset 0 0 0 1px rgba(0,0,0,.4), 0 1px 0 rgba(255,255,255,.12); }
+.wscrew::after { content: ""; position: absolute; left: 2px; right: 2px; top: 5px; height: 1.6px; background: rgba(0,0,0,.6); transform: rotate(45deg); }
+
+/* ---------- Transport: five raised keys in a recessed tray, each with a visible lip that collapses when pressed ---------- */
+.transport { position: absolute; left: 48px; top: 428px; width: 440px; height: 68px; display: flex; gap: 4px; padding: 5px 6px 9px; border-radius: 34px;
+  background: linear-gradient(180deg, #d5c9b6, #e0d5c4); box-shadow: inset 0 2px 5px rgba(70,50,30,.3), inset 0 -1px 0 rgba(255,255,255,.55), 0 1px 0 rgba(255,255,255,.85); }
+.tbtn { flex: 1 1 0; display: grid; place-items: center; color: #675c52; border-radius: 7px;
+  background: linear-gradient(180deg, #f8f3eb, #e9e0d3);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 0 0 1px rgba(110,86,56,.26), 0 4px 0 #cbbfac, 0 4px 0 1px rgba(110,86,56,.24), 0 6px 6px -1px rgba(60,40,20,.3);
+  transition: transform 70ms var(--ease-out), box-shadow 70ms var(--ease-out); }
+.tbtn:first-child { border-radius: 26px 7px 7px 26px; } .tbtn:last-child { border-radius: 7px 26px 26px 7px; }
+.tbtn svg { display: block; width: 18px; height: auto; filter: drop-shadow(0 1px 0 rgba(255,255,255,.75)); }
+.tbtn:active, .tbtn[aria-pressed="true"] { transform: translateY(3px); color: #51473e;
+  box-shadow: inset 0 1px 3px rgba(90,62,30,.2), 0 0 0 1px rgba(110,86,56,.26), 0 1px 0 #cbbfac, 0 1px 0 1px rgba(110,86,56,.24), 0 2px 2px rgba(60,40,20,.25); }
+
+.strap { position: absolute; left: 700px; top: 112px; pointer-events: none; filter: drop-shadow(3px 8px 5px rgba(60,35,15,.25)); }
+
+.hint { margin: 0; color: #7b8491; font-size: 13px; letter-spacing: .02em; text-align: center; max-width: 640px; text-wrap: balance; }
+.hint kbd { font: 500 11px/1 var(--font); border: 1px solid #d5d9df; border-radius: 5px; padding: 2px 5px; background: #f6f7f9; color: #5b6471; }
+
+@media (prefers-reduced-motion: reduce) { * { transition-duration: .01ms !important; } }
+</style>
+
+</head>
+<body>
+<main>
+  <h1 class="sr">Lo-fi cassette deck</h1>
+  <div id="fit">
+    <div class="stage" id="stage">
+      <div class="floor" aria-hidden="true"></div>
+      <div id="rack" role="group" aria-label="Cassettes"></div>
+
+      <div class="side" aria-hidden="false">
+        <div class="slot" aria-hidden="true"></div>
+        <div class="tabwell">
+          <button class="tab" id="kEject" type="button" aria-label="Eject"></button>
+          <button class="tab" id="kPlay" type="button" aria-label="Play" aria-pressed="false"></button>
+          <button class="tab" id="kStop" type="button" aria-label="Stop"></button>
+        </div>
+      </div>
+      <div class="body" id="deck">
+        <div class="feet" aria-hidden="true"><i></i><i></i></div>
+        <div class="plate" aria-hidden="true"></div>
+
+        <div class="lcd" role="img" aria-label="Display"><canvas id="disp" width="880" height="240"></canvas></div>
+        <p class="sr" id="now" aria-live="polite"></p>
+
+        <div class="knob-wrap" id="kw" style="--v:.6">
+          <div class="bezel"></div><div class="ring"></div>
+          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Volume" aria-valuemin="0" aria-valuemax="100" aria-valuenow="60"><div class="face"></div></div>
+        </div>
+
+        <button class="sbtn" id="loud" type="button" aria-pressed="false" aria-label="Loudness">
+          <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 5v20M15 5v20M22 5v20"/><rect x="5.5" y="16" width="5" height="3.2" rx="1" fill="#eae1d2"/><rect x="12.5" y="9" width="5" height="3.2" rx="1" fill="#eae1d2"/><rect x="19.5" y="14" width="5" height="3.2" rx="1" fill="#eae1d2"/></svg>
+        </button>
+        <button class="sbtn" id="nr" type="button" aria-pressed="false" aria-label="Noise reduction">
+          <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="15" r="2" fill="currentColor"/><path d="M15 10.5a6.5 6.5 0 0 1 0 9M19 7.5a11 11 0 0 1 0 15"/></svg>
+        </button>
+        <div class="grille" aria-hidden="true"></div>
+        <div class="led" id="led" aria-hidden="true"></div>
+        <div class="port" aria-hidden="true"></div>
+
+        <div class="win" aria-hidden="true">
+          <svg class="mech" width="420" height="216" viewBox="0 0 420 216">
+            <g fill="#5d544a" stroke="#2a221c" stroke-width="1"><circle cx="125" cy="108" r="9"/><circle cx="295" cy="108" r="9"/></g>
+            <g stroke="#8d8377" stroke-width="2" stroke-linecap="round"><path d="M125 101v-4M131 111.5l3.5 2M119 111.5l-3.5 2M295 101v-4M301 111.5l3.5 2M289 111.5l-3.5 2"/></g>
+            <rect x="190" y="196" width="40" height="20" rx="3" fill="#8b857d" stroke="#3a332c"/><rect x="204" y="196" width="12" height="6" fill="#c9c4bb"/>
+            <circle cx="148" cy="200" r="3.5" fill="#9a948b"/><circle cx="272" cy="200" r="3.5" fill="#9a948b"/>
+          </svg>
+          <div class="cas" id="cas"><canvas id="reels" width="800" height="392"></canvas><svg id="casFront" viewBox="0 0 400 196"></svg></div>
+          <div class="smoke"></div>
+          <div class="doorglass"></div>
+          <i class="wscrew" style="left:10px;top:10px"></i><i class="wscrew" style="right:10px;top:10px"></i>
+          <i class="wscrew" style="left:10px;bottom:10px"></i><i class="wscrew" style="right:10px;bottom:10px"></i>
+        </div>
+
+        <div class="transport" role="group" aria-label="Transport">
+          <button class="tbtn" id="rew" type="button" aria-pressed="false" aria-label="Rewind">
+            <svg width="26" height="20" viewBox="0 0 30 24" fill="currentColor"><path d="M14 3v18L2 12zM28 3v18L16 12z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+          <button class="tbtn" id="stop" type="button" aria-label="Stop">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="3"/></svg></button>
+          <button class="tbtn" id="play" type="button" aria-label="Play" aria-pressed="false">
+            <svg width="20" height="22" viewBox="0 0 24 26" fill="currentColor"><path d="M4 3v20l17-10z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg></button>
+          <button class="tbtn" id="pause" type="button" aria-label="Pause" aria-pressed="false">
+            <svg width="18" height="20" viewBox="0 0 22 24" fill="currentColor"><rect x="2" y="3" width="6" height="18" rx="1.5"/><rect x="14" y="3" width="6" height="18" rx="1.5"/></svg></button>
+          <button class="tbtn" id="ffw" type="button" aria-pressed="false" aria-label="Fast forward">
+            <svg width="26" height="20" viewBox="0 0 30 24" fill="currentColor"><path d="M2 3v18l12-9zM16 3v18l12-9z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+        </div>
+
+        <svg class="strap" width="64" height="330" viewBox="0 0 64 330" aria-hidden="true">
+          <defs>
+            <linearGradient id="lth" x1="34" x2="56" y1="0" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#b8743c"/><stop offset=".5" stop-color="#965629"/><stop offset="1" stop-color="#6c3c1b"/></linearGradient>
+            <linearGradient id="brass" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f0dcae"/><stop offset=".55" stop-color="#bf9452"/><stop offset="1" stop-color="#86622f"/></linearGradient>
+          </defs>
+          <rect x="14" y="12" width="12" height="34" rx="3" fill="#ddd2c0" stroke="rgba(110,86,56,.4)" stroke-width="1"/>
+          <path d="M36 30C47 44 50 96 48 160S43 262 41 300" fill="none" stroke="#4e2b14" stroke-width="12" stroke-linecap="round"/>
+          <path d="M36 30C47 44 50 96 48 160S43 262 41 300" fill="none" stroke="url(#lth)" stroke-width="10" stroke-linecap="round"/>
+          <path d="M36 30C47 44 50 96 48 160S43 262 41 300" fill="none" stroke="rgba(40,18,6,.55)" stroke-width=".8"/>
+          <path d="M33.5 32C44 46 46.5 96 44.5 160S39.6 262 37.6 298" fill="none" stroke="rgba(255,220,180,.32)" stroke-width="1.4" stroke-linecap="round"/>
+          <rect x="40" y="70" width="17" height="16" rx="3" fill="#7a4420" stroke="#4e2b14" stroke-width="1" transform="rotate(4 48 78)"/>
+          <rect x="22" y="20" width="18" height="18" rx="7" fill="none" stroke="url(#brass)" stroke-width="3.2"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+
+  const TRACKS = [
+    { title: 'High On Life',   artist: 'Martin Garrix ft. Bonn', dur: 192, bpm: 84, root: 57, scale: 'maj', seed: 11, prog: [[0, 'maj7'], [7, 'dom7'], [9, 'm7'], [5, 'maj7']],
+      shell: '#d6c9b4', line: '#e0682e', art: ['#f9cf94', '#e98a4a', '#ffe0b0', '#6b4330', '#3d281d'] },
+    { title: 'No Sleep',       artist: 'Martin Garrix ft. Bonn', dur: 236, bpm: 72, root: 52, scale: 'min', seed: 23, prog: [[0, 'm7'], [8, 'maj7'], [3, 'maj7'], [10, 'dom7']],
+      shell: '#5f5852', line: '#6f86c9', art: ['#5d6fb0', '#262d57', '#c9d3ff', '#232a4d', '#141831'] },
+    { title: 'The Nights',     artist: 'Avicii', dur: 226, bpm: 90, root: 55, scale: 'maj', seed: 37, prog: [[0, 'maj7'], [5, 'maj7'], [9, 'm7'], [7, 'dom7']],
+      shell: '#b58a5c', line: '#c4588a', art: ['#f3a6a0', '#9a4e86', '#ffd1b8', '#5b2f56', '#321a35'] },
+    { title: 'All Time Low',   artist: 'Jon Bellion', dur: 214, bpm: 68, root: 50, scale: 'min', seed: 41, prog: [[0, 'm7'], [10, 'maj7'], [5, 'maj7'], [7, 'm7']],
+      shell: '#8f8b85', line: '#e2ae49', art: ['#e07a5f', '#6d2433', '#ffc09a', '#4a1a24', '#2a0f16'] },
+    { title: 'Counting Stars', artist: 'OneRepublic', dur: 257, bpm: 76, root: 53, scale: 'maj', seed: 53, prog: [[0, 'maj7'], [9, 'm7'], [2, 'm7'], [7, 'dom7']],
+      shell: '#e4ddcf', line: '#4f9a93', art: ['#8ed1c6', '#2f6d78', '#f6f0c8', '#1f4a54', '#122d35'] },
+  ];
+  const CHORDS = { maj7: [0, 4, 7, 11], m7: [0, 3, 7, 10], dom7: [0, 4, 7, 10] };
+  const SCALES = { maj: [0, 2, 4, 7, 9], min: [0, 3, 5, 7, 10] };
+
+  // deck: which tape is in the slot; state: 'in' (seated), 'out' (ejected, sticking out), 'moving'
+  const S = { deck: 0, state: 'in', pos: TRACKS.map(() => 0), t: 0, playing: false, paused: false, wind: 0, vol: .6, loud: false, nr: false, busy: false };
+  const el = {
+    kw: $('kw'), knob: $('knob'), led: $('led'), rack: $('rack'), cas: $('cas'), front: $('casFront'), now: $('now'), stage: $('stage'),
+    play: $('play'), pause: $('pause'), stop: $('stop'), rew: $('rew'), ffw: $('ffw'), kEject: $('kEject'), kPlay: $('kPlay'), kStop: $('kStop'), loud: $('loud'), nr: $('nr'),
+  };
+  const fmt = (s) => { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  const mulberry = (a) => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const seated = () => (S.deck >= 0 && S.state === 'in' ? TRACKS[S.deck] : null);
+
+  const fit = $('fit'), stage = $('stage');
+  let scale = 1;
+  function resize() {
+    scale = Math.min(1.05, fit.clientWidth / 1340);
+    stage.style.transform = `scale(${scale})`;
+    fit.style.height = (650 * scale) + 'px';
+  }
+  new ResizeObserver(resize).observe(fit); resize();
+
+  /* ---------- Cassette artwork (the same drawing for the stack and for the deck) ---------- */
+  const OUTER = 'M12 .5H388a11.5 11.5 0 0 1 11.5 11.5V184a11.5 11.5 0 0 1-11.5 11.5H12A11.5 11.5 0 0 1 .5 184V12A11.5 11.5 0 0 1 12 .5Z';
+  const HOLES = 'M94 98a21 21 0 1 0 42 0a21 21 0 1 0-42 0ZM264 98a21 21 0 1 0 42 0a21 21 0 1 0-42 0ZM158 76H242a6 6 0 0 1 6 6V114a6 6 0 0 1-6 6H158a6 6 0 0 1-6-6V82a6 6 0 0 1 6-6Z';
+  const BOTTOM = 'M132 182a6 6 0 1 0 12 0a6 6 0 1 0-12 0ZM256 182a6 6 0 1 0 12 0a6 6 0 1 0-12 0ZM182 172H218V195.5H182ZM156 176H166V195.5H156ZM234 176H244V195.5H234Z';
+  const PILL = 'M98 64H302a34 34 0 0 1 0 68H98a34 34 0 0 1 0-68Z';
+  let RIBS = ''; for (let y = 68; y <= 148; y += 8) RIBS += `M14 ${y}H386`;
+  let uid = 0;
+  function casSVG(tr, withInside) {
+    const id = 'c' + (uid++);
+    const inside = withInside ? `<rect width="400" height="196" rx="12" fill="#120d0a"/>
+      <circle cx="115" cy="98" r="46" fill="#5a4030"/><circle cx="285" cy="98" r="38" fill="#5a4030"/>
+      <g fill="#ece6da"><circle cx="115" cy="98" r="14"/><circle cx="285" cy="98" r="14"/></g><g fill="#1e1813"><circle cx="115" cy="98" r="9.5"/><circle cx="285" cy="98" r="9.5"/></g>` : '';
+    return `<defs>
+        <linearGradient id="${id}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".24"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient>
+        <clipPath id="${id}k"><path clip-rule="evenodd" d="${OUTER}${PILL}"/></clipPath>
+      </defs>${inside}
+      <path fill="${tr.shell}" fill-rule="evenodd" stroke="rgba(0,0,0,.4)" stroke-width="1" d="${OUTER}${HOLES}${BOTTOM}"/>
+      <g clip-path="url(#${id}k)"><path d="${RIBS}" stroke="rgba(0,0,0,.13)" stroke-width="1"/><path d="${RIBS}" stroke="rgba(255,255,255,.14)" stroke-width="1" transform="translate(0 1)"/></g>
+      <path fill="rgba(0,0,0,.16)" fill-rule="evenodd" d="${PILL}${HOLES}"/>
+      <path fill="none" stroke="rgba(0,0,0,.3)" stroke-width="1" d="${PILL}"/>
+      <g fill="none"><circle cx="115" cy="98" r="24.5" stroke="rgba(255,255,255,.3)" stroke-width="3"/><circle cx="285" cy="98" r="24.5" stroke="rgba(255,255,255,.3)" stroke-width="3"/>
+        <circle cx="115" cy="98" r="21.5" stroke="rgba(0,0,0,.45)"/><circle cx="285" cy="98" r="21.5" stroke="rgba(0,0,0,.45)"/></g>
+      <rect x="152.5" y="76.5" width="95" height="43" rx="6" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.28)"/>
+      <path d="M164 120v-3M176 120v-4M188 120v-3M200 120v-4M212 120v-3M224 120v-4M236 120v-3" stroke="rgba(255,255,255,.45)" stroke-width=".8"/>
+      <rect x="30" y="12" width="340" height="46" rx="4" fill="#efe6d2" stroke="rgba(0,0,0,.14)"/>
+      <path d="M46 44H354" stroke="${tr.line}" stroke-width="1.8"/>
+      <text x="48" y="38" font-family="Caveat, 'Segoe Print', cursive" font-weight="600" font-size="22" fill="#28305a">${tr.title}</text>
+      <text x="354" y="30" text-anchor="end" font-family="Chakra Petch, sans-serif" font-weight="600" font-size="12" fill="#3a3a44">A</text>
+      <path fill="${tr.shell}" fill-rule="evenodd" stroke="rgba(0,0,0,.3)" stroke-width=".8" d="M86 195.5 104 152H296L314 195.5Z${BOTTOM}"/>
+      <path d="M104.6 152.6H295.4" stroke="rgba(255,255,255,.35)"/>
+      <path fill="url(#${id}s)" fill-rule="evenodd" d="${OUTER}${HOLES}${BOTTOM}"/>
+      <g fill="#7d746b" stroke="rgba(0,0,0,.45)" stroke-width=".6"><circle cx="11" cy="11" r="4.4"/><circle cx="389" cy="11" r="4.4"/><circle cx="11" cy="185" r="4.4"/><circle cx="389" cy="185" r="4.4"/><circle cx="200" cy="163" r="4.4"/></g>
+      <path d="M8.5 13.5l5-5M386.5 13.5l5-5M8.5 187.5l5-5M386.5 187.5l5-5M197.5 165.5l5-5" stroke="rgba(30,25,20,.7)" stroke-width="1.1" stroke-linecap="round"/>`;
+  }
+
+  /* ---------- Tape motion (stage coordinates) ---------- */
+  const DECK_X = 560 + 58 + 10, DECK_Y = 44 + 192 + 10;   // seated, exactly behind the glass
+  const OUT_X = DECK_X - 190;                               // ejected: about a third sticks out of the side slot
+  const CLEAR_X = 112;                                      // fully clear of the side wall
+  const SIDE_X = 544;                                       // left edge of the deck's side wall
+  const TILT = [-1.6, 1.2, -.8, 1.5, -1.1];
+  const easeOut = (p) => 1 - Math.pow(1 - p, 4);                                         // responding: fast start
+  const easeInOut = (p) => (p < .5 ? 8 * p * p * p * p : 1 - Math.pow(-2 * p + 2, 4) / 2); // moving on screen
+  const motor = (p) => { const a = .14; return p < a ? p * p / (2 * a * (1 - a)) : p > 1 - a ? 1 - (1 - p) * (1 - p) / (2 * a * (1 - a)) : (p - a / 2) / (1 - a); }; // belt drive: brief spin-up, constant speed, brief spin-down
+  const sleep = (ms) => new Promise((r) => setTimeout(r, reduce.matches ? 0 : ms));
+  let dirty = 4; const poke = () => { dirty = 4; };
+  let casY = 0, zTop = 10;
+
+  const tapes = TRACKS.map((tr, i) => {
+    const d = document.createElement('div');
+    d.className = 'tp'; d.tabIndex = 0; d.setAttribute('role', 'button');
+    d.setAttribute('aria-label', tr.title + ' by ' + tr.artist + ' cassette');
+    d.innerHTML = `<svg viewBox="0 0 400 196">${casSVG(tr, true)}</svg>`;
+    el.rack.append(d);
+    const t = { i, el: d, x: 24, y: 120, r: TILT[i], s: 1, rt: 0, z: i + 1, role: 'stack', tw: null, sp: null, drag: false };
+    wireTape(t);
+    return t;
+  });
+  const raise = (t) => { t.z = ++zTop; };
+  function render(t) {
+    t.el.style.transform = `translate(${t.x.toFixed(2)}px, ${t.y.toFixed(2)}px) rotate(${t.r.toFixed(2)}deg) scale(${t.s.toFixed(4)})`;
+    if (t._z !== t.z) { t.el.style.zIndex = t.z; t._z = t.z; }
+    t.el.classList.toggle('inside', t.role === 'deck' && S.state === 'in');
+  }
+  function stopMotion(t) {
+    if (t.tw) { const r = t.tw.res; t.tw = null; r(); }
+    if (t.sp) { const r = t.sp.res; t.sp = null; r(); }
+  }
+  function tween(t, to, ms, ease) {
+    stopMotion(t); poke();
+    to = { x: t.x, y: t.y, r: t.r, s: t.s, ...to };
+    if (reduce.matches) ms = 1;
+    return new Promise((res) => { t.tw = { from: { x: t.x, y: t.y, r: t.r, s: t.s }, to, t0: performance.now(), ms, ease, res }; });
+  }
+  // Springs carry velocity, so a pop, a throw or a set-down feels physical and can be interrupted mid-flight
+  function spring(t, to, { k = 300, c = 26, vx = 0, vy = 0, vr = 0 } = {}) {
+    stopMotion(t); poke();
+    to = { x: t.x, y: t.y, r: t.r, s: t.s, ...to };
+    if (reduce.matches) { Object.assign(t, to); render(t); return Promise.resolve(); }
+    return new Promise((res) => { t.sp = { to, k, c, v: { x: vx, y: vy, r: vr, s: 0 }, res }; });
+  }
+  const KEYS = ['x', 'y', 'r', 's'];
+  function stepMotion(now, dt) {
+    for (const t of tapes) {
+      const w = t.tw;
+      if (w) {
+        const p = clamp((now - w.t0) / w.ms, 0, 1), e = w.ease(p);
+        for (const k of KEYS) t[k] = w.from[k] + (w.to[k] - w.from[k]) * e;
+        if (p >= 1) { t.tw = null; w.res(); }
+      }
+      const sp = t.sp;
+      if (sp) {
+        const h = dt / 4;
+        for (let n = 0; n < 4; n++) for (const k of KEYS) {
+          const a = -sp.k * (t[k] - sp.to[k]) - sp.c * sp.v[k];
+          sp.v[k] += a * h; t[k] += sp.v[k] * h;
+        }
+        let settled = true;
+        for (const k of ['x', 'y', 'r']) if (Math.abs(t[k] - sp.to[k]) > .15 || Math.abs(sp.v[k]) > 3) settled = false;
+        if (settled) { Object.assign(t, sp.to); t.sp = null; sp.res(); }
+      }
+      if (t.drag) {                                   // held in the hand: it leans into the motion and rights itself, like a spring
+        t.rt *= Math.exp(-dt * 7);
+        t.r += (t.rt - t.r) * (1 - Math.exp(-dt * 16));
+      }
+      render(t);
+    }
+    // the copy behind the glass follows whichever tape is lined up with the slot
+    const s = S.deck >= 0 ? tapes[S.deck] : null;
+    casY *= Math.exp(-dt * 16); if (Math.abs(casY) < .02) casY = 0;
+    el.cas.style.transform = s ? `translate(${(s.x - DECK_X).toFixed(2)}px, ${casY.toFixed(2)}px)` : 'translateX(-480px)';
+  }
+  function pileHomes() {
+    const step = 66, h = (tapes.length - 2) * step + 196, y0 = 314 - h / 2;
+    return tapes.slice(1).map((t, k) => ({ t, to: { x: 24, y: y0 + k * step, r: TILT[t.i], s: 1 } }));
+  }
+  // Where a loose tape may rest: anywhere on the desk, but never hidden behind the deck
+  function restingSpot(x, y) {
+    y = clamp(y, 0, 650 - 186);
+    x = clamp(x, -80, SIDE_X - 220);
+    return { x, y };
+  }
+  const nearSlot = (t) => t.x + 400 > SIDE_X - 20 && Math.abs(t.y - DECK_Y) < 90;
+
+  /* ---------- Insert, eject, remove ---------- */
+  let msg = null;
+  const toast = (text) => { msg = { text, until: performance.now() + 1500 }; poke(); };
+  const lift = (t, on) => t.el.classList.toggle('lift', on);
+
+  async function insert(t, fromDrag) {
+    if (S.busy || t.role !== 'stack') return;
+    if (S.deck >= 0) {
+      if (S.state === 'in') { toast('Eject the tape first'); nudge(t); return; }
+      await removeTape(0, 0);
+    }
+    S.busy = true; initAudio();
+    t.role = 'travel'; raise(t); lift(t, true);
+    // 1. picked up and lined up with the slot (kept slightly lifted while carried)
+    const lineX = fromDrag ? clamp(t.x, CLEAR_X, OUT_X) : CLEAR_X;
+    const d = Math.hypot(lineX - t.x, DECK_Y - t.y);
+    if (d > 2) await tween(t, { x: lineX, y: DECK_Y, r: 0, s: 1.025 }, clamp(260 + d * .6, 260, 560), easeInOut);
+    S.deck = t.i; S.state = 'moving'; S.t = S.pos[t.i];
+    el.front.innerHTML = casSVG(TRACKS[t.i], false);
+    // 2. pushed in by hand until the loader catches it
+    click('slide');
+    await tween(t, { x: OUT_X + 24, s: 1, r: 0 }, 300, easeOut);
+    lift(t, false); click('catch'); dither();
+    await sleep(110);
+    // 3. the belt draws it in at a steady speed, then it drops onto the spindles
+    await tween(t, { x: DECK_X - 1.5 }, 900, motor);
+    await tween(t, { x: DECK_X }, 60, easeOut);
+    casY = -3; angL += .3; angR -= .2;
+    t.role = 'deck'; S.state = 'in'; click('load');
+    el.now.textContent = 'Loaded ' + TRACKS[t.i].title + '. Press play.';
+    S.busy = false; ui();
+  }
+  async function eject() {
+    if (S.busy) return;
+    if (S.deck < 0 || S.state !== 'in') { if (S.deck < 0) toast('No tape'); return; }
+    S.busy = true;
+    halt(); S.paused = false; S.pos[S.deck] = S.t; S.state = 'moving'; ui();
+    await sleep(90);                                     // reels coast to a stop, then the catch lets go
+    click('pop');
+    const t = tapes[S.deck]; raise(t);
+    await spring(t, { x: OUT_X }, { k: 360, c: 22, vx: -1500 });   // the spring kicks it out and it rebounds once
+    S.state = 'out'; S.busy = false; poke();
+    el.now.textContent = 'Tape ejected. Drag it out and put it anywhere.';
+  }
+  // Pulled straight out along the slot, then it keeps its momentum and comes to rest wherever it is set down
+  async function removeTape(vx, vy) {
+    if (S.deck < 0 || S.state !== 'out') return;
+    S.busy = true;
+    const t = tapes[S.deck]; S.state = 'moving'; lift(t, true); raise(t);
+    click('slide');
+    const speed = Math.max(.9, Math.abs(vx || 0));
+    await tween(t, { x: CLEAR_X, s: 1.025 }, clamp((t.x - CLEAR_X) / speed, 160, 380), easeOut);
+    S.deck = -1; S.state = 'in'; dither();
+    t.role = 'stack';
+    const vX = Math.min(0, (vx || 0) * 1000), vY = (vy || 0) * 1000;
+    const spot = restingSpot(t.x + vX * .16, t.y + vY * .16 + 26);
+    lift(t, false); click('setdown');
+    await spring(t, { ...spot, r: (Math.random() - .5) * 4, s: 1 }, { k: 170, c: 26, vx: vX * .6, vy: vY * .6 });
+    S.busy = false; ui();
+  }
+  async function reseat(t) {                                         // pushed back in by hand
+    S.busy = true; S.state = 'moving'; click('catch');
+    await tween(t, { x: DECK_X - 1.5, s: 1 }, 600, motor);
+    await tween(t, { x: DECK_X }, 60, easeOut);
+    casY = -3; S.state = 'in'; t.role = 'deck'; click('load');
+    S.busy = false; ui();
+  }
+  function nudge(t) { const x = t.x; tween(t, { x: x + 12 }, 110, easeOut).then(() => spring(t, { x }, { k: 520, c: 20 })); }
+
+  // Mouse and touch: pick up any loose tape and put it anywhere; drop it at the slot to load it.
+  // The ejected tape slides only along the slot, with friction if you push it back in. Flicks count.
+  function wireTape(t) {
+    let st = null;
+    t.el.addEventListener('pointerdown', (e) => {
+      if (st || S.busy) return;                       // one pointer at a time
+      if (t.role === 'deck' ? S.state !== 'out' : t.role !== 'stack') return;
+      t.el.setPointerCapture(e.pointerId);
+      raise(t);
+      st = { id: e.pointerId, cx: e.clientX, cy: e.clientY, x: t.x, y: t.y, moved: false, lx: t.x, ly: t.y, lt: performance.now(), vx: 0, vy: 0 };
+      initAudio(); click('grab'); poke();
+    });
+    t.el.addEventListener('pointermove', (e) => {
+      if (!st || e.pointerId !== st.id) return;
+      const dx = (e.clientX - st.cx) / scale, dy = (e.clientY - st.cy) / scale;
+      if (!st.moved && Math.hypot(dx, dy) < 5) return;
+      if (!st.moved) { st.moved = true; t.drag = true; stopMotion(t); lift(t, true); }
+      if (t.role === 'deck') t.x = Math.max(-40, dx < 0 ? st.x + dx : st.x + dx * .25);
+      else { t.x = st.x + dx; t.y = st.y + dy; t.s = 1.025; }
+      const now = performance.now(), dtm = Math.max(1, now - st.lt);
+      st.vx = st.vx * .6 + ((t.x - st.lx) / dtm) * .4; st.vy = st.vy * .6 + ((t.y - st.ly) / dtm) * .4;
+      st.lx = t.x; st.ly = t.y; st.lt = now;
+      if (t.role !== 'deck') t.rt = clamp(st.vx * 5, -6, 6);
+      poke();
+    });
+    const up = (e) => {
+      if (!st || (e && e.pointerId !== st.id)) return;
+      const s = st; st = null; t.drag = false;
+      if (!s.moved) { activate(t); return; }
+      if (t.role === 'deck') {
+        if (t.x < OUT_X - 50 || s.vx < -.4) removeTape(s.vx, s.vy);
+        else if (t.x > OUT_X + 8) { lift(t, false); reseat(t); }
+        else { lift(t, false); spring(t, { x: OUT_X, s: 1, r: 0 }, { k: 380, c: 30, vx: s.vx * 1000 }); }
+      } else if (nearSlot(t)) insert(t, true);
+      else {
+        // thrown: it keeps a little of its momentum, slides to a stop and lies flat
+        const spot = restingSpot(t.x + s.vx * 160, t.y + s.vy * 160);
+        lift(t, false); click('setdown');
+        spring(t, { ...spot, r: t.r * .4, s: 1 }, { k: 170, c: 26, vx: s.vx * 600, vy: s.vy * 600 });
+      }
+    };
+    t.el.addEventListener('pointerup', up);
+    t.el.addEventListener('pointercancel', up);
+    t.el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); initAudio(); click('grab'); activate(t); } });
+  }
+  /* Your own recordings: put an audio file on a cassette. It then plays through the deck (wow, hiss, loudness, NR) */
+  const picker = Object.assign(document.createElement('input'), { type: 'file', accept: 'audio/*', hidden: true });
+  document.body.append(picker);
+  let pickFor = -1;
+  picker.addEventListener('change', () => { if (picker.files[0] && pickFor >= 0) record(pickFor, picker.files[0]); picker.value = ''; });
+  function hookRec(a) { if (!a._hooked && ctx) { ctx.createMediaElementSource(a).connect(input); a._hooked = true; } }
+  function record(i, file) {
+    if (!file || !/^audio\//.test(file.type)) { toast('Not an audio file'); return; }
+    const tr = TRACKS[i];
+    if (S.deck === i) halt();
+    if (tr.rec) { tr.rec.pause(); URL.revokeObjectURL(tr.rec.src); }
+    const a = new Audio(); a.preload = 'auto'; a.src = URL.createObjectURL(file);
+    tr.rec = a; S.pos[i] = 0; if (S.deck === i) S.t = 0;
+    a.addEventListener('loadedmetadata', () => { if (isFinite(a.duration)) tr.dur = a.duration; poke(); });
+    a.addEventListener('ended', () => { if (S.deck === i && S.playing) { S.t = tr.dur; halt(); toast('End of tape'); ui(); } });
+    initAudio(); hookRec(a); click('load');
+    toast('Recorded onto ' + tr.title);
+  }
+  for (const t of tapes) {
+    t.el.addEventListener('dblclick', () => { pickFor = t.i; picker.click(); });
+    t.el.addEventListener('dragover', (e) => { e.preventDefault(); });
+    t.el.addEventListener('drop', (e) => { e.preventDefault(); record(t.i, e.dataTransfer.files[0]); });
+  }
+  const deckEl = $('deck');
+  deckEl.addEventListener('dragover', (e) => e.preventDefault());
+  deckEl.addEventListener('drop', (e) => { e.preventDefault(); if (S.deck >= 0) record(S.deck, e.dataTransfer.files[0]); else toast('Insert a tape first'); });
+
+  function activate(t) {
+    if (S.busy) return;
+    if (t.role === 'deck' && S.state === 'out') removeTape(0, 0);
+    else if (t.role === 'stack') insert(t);
+  }
+
+  /* ---------- Audio engine ---------- */
+  let ctx = null, input, eqLow, eqHigh, tone, master, sfx, analyser, hissGain, windGain, noiseBuf, bus = null, timer = null, nextT = 0, step = 0;
+  function initAudio() {
+    if (ctx) { if (ctx.state === 'suspended') ctx.resume().catch(() => {}); return; }
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    input = ctx.createGain();
+    const wow = ctx.createDelay(.05); wow.delayTime.value = .008;           // wow and flutter from an imperfect capstan
+    const l1 = ctx.createOscillator(), g1 = ctx.createGain(); l1.frequency.value = .55; g1.gain.value = .0006; l1.connect(g1); g1.connect(wow.delayTime); l1.start();
+    const l2 = ctx.createOscillator(), g2 = ctx.createGain(); l2.frequency.value = 6.5; g2.gain.value = .00006; l2.connect(g2); g2.connect(wow.delayTime); l2.start();
+    eqLow = ctx.createBiquadFilter(); eqLow.type = 'lowshelf'; eqLow.frequency.value = 120;
+    eqHigh = ctx.createBiquadFilter(); eqHigh.type = 'highshelf'; eqHigh.frequency.value = 6000;
+    tone = ctx.createBiquadFilter(); tone.type = 'lowpass'; tone.frequency.value = 11000; tone.Q.value = .4;
+    master = ctx.createGain();
+    analyser = ctx.createAnalyser(); analyser.fftSize = 128; analyser.smoothingTimeConstant = .7;
+    input.connect(wow); wow.connect(eqLow); eqLow.connect(eqHigh); eqHigh.connect(tone); tone.connect(master); master.connect(analyser); analyser.connect(ctx.destination);
+    sfx = ctx.createGain(); sfx.gain.value = .6; sfx.connect(ctx.destination);
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const hiss = ctx.createBufferSource(); hiss.buffer = noiseBuf; hiss.loop = true;
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3500;
+    hissGain = ctx.createGain(); hissGain.gain.value = 0;
+    hiss.connect(hp); hp.connect(hissGain); hissGain.connect(input); hiss.start();
+    const whirr = ctx.createBufferSource(); whirr.buffer = noiseBuf; whirr.loop = true;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 900; bp.Q.value = .8;
+    windGain = ctx.createGain(); windGain.gain.value = 0;
+    whirr.connect(bp); bp.connect(windGain); windGain.connect(sfx); whirr.start();
+    applyAudioParams(true);
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  }
+  function applyAudioParams(now) {
+    if (!ctx) return;
+    const t = ctx.currentTime, k = now ? 0 : .08;
+    master.gain.setTargetAtTime(Math.pow(S.vol, 1.7) * .9, t, k + .01);
+    sfx.gain.setTargetAtTime(.35 + S.vol * .5, t, .02);
+    eqLow.gain.setTargetAtTime(S.loud ? 7 : 0, t, k + .01);
+    eqHigh.gain.setTargetAtTime((S.loud ? 3 : 0) - (S.nr ? 2 : 0), t, k + .01);
+    tone.frequency.setTargetAtTime(S.nr ? 8000 : 11000, t, k + .02);
+    hissGain.gain.setTargetAtTime(S.playing ? (S.nr ? .003 : .014) : 0, t, .15);
+    windGain.gain.setTargetAtTime(S.wind ? .035 : 0, t, .12);
+  }
+  function newBus() {
+    killBus();
+    const b = ctx.createGain(); b.gain.value = 0; b.gain.setTargetAtTime(1, ctx.currentTime, .05);
+    const dry = ctx.createGain();
+    const send = ctx.createGain(); send.gain.value = .26;
+    const dl = ctx.createDelay(1.5); dl.delayTime.value = (60 / seated().bpm) * .75;
+    const fb = ctx.createGain(); fb.gain.value = .36;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1700;
+    dry.connect(b); dry.connect(send); send.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(b); b.connect(input);
+    bus = { b, dry, nodes: [b, dry, send, dl, fb, lp] };
+  }
+  function killBus() {
+    if (!bus) return;
+    const old = bus; bus = null;
+    try { old.b.gain.cancelScheduledValues(ctx.currentTime); old.b.gain.setTargetAtTime(0, ctx.currentTime, .025); } catch (e) { /* ignore */ }
+    setTimeout(() => { try { old.nodes.forEach((n) => n.disconnect()); } catch (e) { /* ignore */ } }, 400);
+  }
+  function click(kind) {
+    if (!ctx || !sfx) return;
+    if (kind === 'grab' || kind === 'setdown') kind = 'up';
+    const t = ctx.currentTime + .004, j = .94 + Math.random() * .12;
+    const hit = (at, f, q, v, len) => {
+      const s = ctx.createBufferSource(); s.buffer = noiseBuf;
+      const fl = ctx.createBiquadFilter(); fl.type = 'bandpass'; fl.frequency.value = f * j; fl.Q.value = q;
+      const g = ctx.createGain(); g.gain.setValueAtTime(v, at); g.gain.exponentialRampToValueAtTime(.001, at + len);
+      s.connect(fl); fl.connect(g); g.connect(sfx); s.start(at, Math.random()); s.stop(at + len + .02);
+    };
+    const thump = (f, v, len) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine';
+      o.frequency.setValueAtTime(f * j, t); o.frequency.exponentialRampToValueAtTime(48, t + .06);
+      g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + len);
+      o.connect(g); g.connect(sfx); o.start(t); o.stop(t + len + .02);
+    };
+    if (kind === 'tick') { hit(t, 3200, 2, .22, .014); return; }
+    if (kind === 'catch') { thump(140, .25, .04); hit(t, 2600, 2, .32, .015); return; }
+    if (kind === 'up') { thump(120, .3, .05); hit(t, 3800, 1.4, .34, .018); return; }
+    if (kind === 'slide') { hit(t, 1500, .6, .16, .5); hit(t + .2, 1100, .6, .12, .6); return; }
+    if (kind === 'load') { thump(100, .9, .12); hit(t, 1200, 1.2, .6, .04); hit(t + .06, 2600, 1.6, .5, .02); return; }
+    if (kind === 'pop') { thump(150, .8, .1); hit(t, 2000, 1.2, .7, .03); hit(t + .03, 3400, 2, .4, .05); return; }
+    thump(170, .9, .1);
+    hit(t, 2400, 1.1, .7, .024); hit(t + .006, 900, 1.6, .5, .03);
+    if (kind === 'latch') hit(t + .042, 1700, 2.2, .45, .02);
+  }
+
+  function voice(freq, t, dur, vel, type) {
+    const o = ctx.createOscillator(), o2 = ctx.createOscillator(), g = ctx.createGain(), g2 = ctx.createGain();
+    o.type = type || 'triangle'; o2.type = 'sine';
+    o.frequency.value = freq; o2.frequency.value = freq * 2; o2.detune.value = 4; g2.gain.value = .22;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vel, t + .014); g.gain.setTargetAtTime(0, t + .03, dur / 3.2);
+    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(bus.dry);
+    o.start(t); o2.start(t); o.stop(t + dur + .5); o2.stop(t + dur + .5);
+  }
+  function bass(freq, t, dur, vel) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vel, t + .01); g.gain.setTargetAtTime(0, t + .04, dur / 3);
+    o.connect(g); g.connect(bus.dry); o.start(t); o.stop(t + dur + .4);
+  }
+  function kick(t, vel) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(42, t + .13);
+    g.gain.setValueAtTime(vel, t); g.gain.exponentialRampToValueAtTime(.001, t + .28);
+    o.connect(g); g.connect(bus.dry); o.start(t); o.stop(t + .3);
+  }
+  function noiseHit(t, dur, vel, ftype, f, q) {
+    const s = ctx.createBufferSource(); s.buffer = noiseBuf;
+    const fl = ctx.createBiquadFilter(); fl.type = ftype; fl.frequency.value = f; fl.Q.value = q || .7;
+    const g = ctx.createGain(); g.gain.setValueAtTime(vel, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+    s.connect(fl); fl.connect(g); g.connect(bus.dry); s.start(t, Math.random()); s.stop(t + dur + .02);
+  }
+  function playStep(st, t) {
+    const tr = seated(), bar = Math.floor(st / 16), i = st % 16, [off, type] = tr.prog[bar % tr.prog.length];
+    const spb = 60 / tr.bpm, rng = mulberry(tr.seed + bar * 131 + i * 7);
+    if (i === 0 || i === 6 || i === 10) {
+      const vel = i === 0 ? .05 : .03;
+      if (i === 0 || rng() < .6) CHORDS[type].forEach((iv, k) => {
+        let m = tr.root + off + iv; while (m > 74) m -= 12; while (m < 57) m += 12;
+        voice(mtof(m), t + k * .012, spb * (i === 0 ? 2.6 : 1.2), vel);
+      });
+    }
+    if (i === 0 || i === 10 || (i === 7 && rng() < .35)) bass(mtof(tr.root + off - 12), t, spb * (i === 10 ? 1.2 : 2), i === 0 ? .26 : .2);
+    if (i === 0 || i === 10 || (i === 7 && rng() < .3)) kick(t, .5);
+    if (i === 4 || i === 12) { noiseHit(t, .16, .17, 'bandpass', 1900, .8); voice(190, t, .1, .06, 'triangle'); }
+    if (i % 2 === 0) noiseHit(t, .045, i % 4 === 2 ? .055 : .035, 'highpass', 7500);
+    if ([0, 2, 3, 6, 8, 10, 11, 14].includes(i) && rng() < .38) {
+      const sc = SCALES[tr.scale]; let m = tr.root + off + 12 + sc[Math.floor(rng() * sc.length)] + (rng() < .4 ? 12 : 0);
+      while (m > 86) m -= 12;
+      voice(mtof(m), t, spb * (.8 + rng() * 1.2), .05, 'sine');
+    }
+    if (i === 0 && rng() < .5) noiseHit(t + rng() * spb, .02, .05, 'highpass', 2500);
+  }
+  function schedule() {
+    if (!S.playing || !ctx || !bus || ctx.state !== 'running' || !seated()) return;
+    const s16 = 60 / seated().bpm / 4;
+    while (nextT < ctx.currentTime + .14) { playStep(step, nextT + (step % 2 ? s16 * .22 : 0)); nextT += s16; step++; }
+  }
+
+  /* ---------- Transport ---------- */
+  async function play() {
+    if (S.deck < 0) { toast('No tape'); return; }
+    if (!seated()) { toast(S.state === 'out' ? 'Push the tape in first' : 'Loading'); return; }
+    if (S.t >= seated().dur - .5) { toast('End of tape, rewind'); return; }
+    initAudio();
+    if (ctx.state === 'suspended') { try { await ctx.resume(); } catch (e) { /* ignore */ } }
+    if (S.playing) return;
+    S.wind = 0; S.playing = true; S.paused = false;
+    const rec = seated().rec;
+    if (rec) { hookRec(rec); try { rec.currentTime = S.t; await rec.play(); } catch (e) { /* ignore */ } }
+    else { step = Math.floor(S.t / (60 / seated().bpm * 4)) * 16; nextT = ctx.currentTime + .12; newBus(); }
+    applyAudioParams();
+    if (!timer) timer = setInterval(schedule, 25);
+    ui();
+  }
+  const stopRecs = () => TRACKS.forEach((tr) => tr.rec && !tr.rec.paused && tr.rec.pause());
+  function halt() { S.playing = false; S.wind = 0; stopRecs(); if (ctx) { killBus(); applyAudioParams(); } }
+  function pause() {
+    if (S.playing) { S.playing = false; S.paused = true; stopRecs(); killBus(); applyAudioParams(); }
+    else if (S.paused) { S.paused = false; play(); return; }
+    ui();
+  }
+  function stop() { halt(); S.paused = false; ui(); }
+  function wind(dir) {
+    if (!seated()) { toast('No tape'); return; }
+    initAudio();
+    const on = S.wind !== dir;
+    halt(); S.paused = false;
+    if (on) S.wind = dir;
+    applyAudioParams(); ui();
+  }
+  function ui() {
+    poke();
+    el.led.classList.toggle('on', S.playing);
+    el.play.setAttribute('aria-pressed', S.playing); el.kPlay.setAttribute('aria-pressed', S.playing);
+    el.pause.setAttribute('aria-pressed', S.paused);
+    el.ffw.setAttribute('aria-pressed', S.wind === 1); el.rew.setAttribute('aria-pressed', S.wind === -1);
+  }
+  function setVol(v, say, fromUser) {
+    const before = Math.floor(S.vol * 20);
+    S.vol = clamp(v, 0, 1);
+    el.kw.style.setProperty('--v', S.vol.toFixed(3));
+    el.knob.setAttribute('aria-valuenow', Math.round(S.vol * 100));
+    applyAudioParams();
+    if (fromUser && Math.floor(S.vol * 20) !== before) { initAudio(); click('tick'); }
+    if (say) toast('Volume ' + Math.round(S.vol * 100) + '%');
+    poke();
+  }
+
+  el.play.addEventListener('click', () => play());
+  el.kPlay.addEventListener('click', () => (S.playing ? pause() : (S.paused ? pause() : play())));
+  el.pause.addEventListener('click', pause);
+  el.stop.addEventListener('click', stop);
+  el.kStop.addEventListener('click', stop);
+  el.kEject.addEventListener('click', eject);
+  el.ffw.addEventListener('click', () => wind(1));
+  el.rew.addEventListener('click', () => wind(-1));
+  el.loud.addEventListener('click', () => { S.loud = !S.loud; el.loud.setAttribute('aria-pressed', S.loud); applyAudioParams(); toast(S.loud ? 'Loudness on' : 'Loudness off'); });
+  el.nr.addEventListener('click', () => { S.nr = !S.nr; el.nr.setAttribute('aria-pressed', S.nr); applyAudioParams(); toast(S.nr ? 'Noise reduction on' : 'Noise reduction off'); });
+
+  const kindOf = (b) => (b.classList.contains('tbtn') || b.classList.contains('tab') ? 'latch' : 'down');
+  document.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest && e.target.closest('button'); if (!b) return;
+    initAudio(); click(kindOf(b)); b._snd = true;
+  }, true);
+  document.addEventListener('pointerup', (e) => {
+    const b = e.target.closest && e.target.closest('button'); if (!b || !b._snd) return;
+    b._snd = false; click('up');
+  }, true);
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('button');
+    if (b && e.detail === 0) { initAudio(); click(kindOf(b)); setTimeout(() => click('up'), 70); }
+  }, true);
+
+  let kAng = null;
+  const angle = (e) => { const r = el.knob.getBoundingClientRect(); return Math.atan2(e.clientX - (r.left + r.width / 2), -(e.clientY - (r.top + r.height / 2))) * 180 / Math.PI; };
+  el.knob.addEventListener('pointerdown', (e) => { el.knob.setPointerCapture(e.pointerId); kAng = angle(e); initAudio(); });
+  el.knob.addEventListener('pointermove', (e) => {
+    if (kAng === null) return;
+    const a = angle(e); let d = a - kAng; if (d > 180) d -= 360; if (d < -180) d += 360;
+    kAng = a; setVol(S.vol + d / 270, true, true);
+  });
+  el.knob.addEventListener('pointerup', () => { kAng = null; });
+  el.knob.addEventListener('pointercancel', () => { kAng = null; });
+  el.knob.addEventListener('wheel', (e) => { e.preventDefault(); setVol(S.vol - e.deltaY * .0012, true, true); }, { passive: false });
+  el.knob.addEventListener('keydown', (e) => {
+    const d = e.key === 'ArrowUp' || e.key === 'ArrowRight' ? .05 : e.key === 'ArrowDown' || e.key === 'ArrowLeft' ? -.05 : 0;
+    if (d) { e.preventDefault(); setVol(S.vol + d, true, true); }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && !/^(BUTTON|INPUT|TEXTAREA)$/.test(document.activeElement.tagName) && !document.activeElement.matches('[role="slider"],[role="button"]')) { e.preventDefault(); S.playing || S.paused ? pause() : play(); }
+  });
+
+  /* ---------- Display, drawn as in the reference; changes dissolve through an ordered dither ---------- */
+  const dc = $('disp').getContext('2d', { willReadFrequently: true });
+  const off = document.createElement('canvas'); off.width = 880; off.height = 240;
+  const oc = off.getContext('2d', { willReadFrequently: true }); oc.scale(2, 2);
+  const BAYER = (() => { let n = 1, M = [[0]]; while (n < 8) { const N = []; for (let y = 0; y < n * 2; y++) { N.push([]); for (let x = 0; x < n * 2; x++) N[y].push(M[y % n][x % n] * 4 + [0, 2, 3, 1][(y >= n) * 2 + (x >= n)]); } M = N; n *= 2; } return M.flat().map((v) => (v + .5) / 64); })();
+  const bins = new Uint8Array(64), hs = new Float32Array(26);
+  let dT0 = -1, fromImg = null;
+  function dither() { fromImg = dc.getImageData(0, 0, 880, 240); dT0 = performance.now(); }
+  const F = (w, s) => `${w} ${s}px "Chakra Petch", ui-sans-serif, system-ui, sans-serif`;
+  function rr(c, x, y, w, h, r) { c.beginPath(); c.roundRect(x, y, w, h, r); }
+
+  function drawDisplay(dt) {
+    const c = oc, tr = seated() || (S.deck >= 0 ? TRACKS[S.deck] : null);
+    const g = c.createLinearGradient(0, 0, 0, 120); g.addColorStop(0, '#2a211b'); g.addColorStop(1, '#1d1612');
+    c.fillStyle = g; c.fillRect(0, 0, 440, 120);
+    // album art
+    c.save(); rr(c, 24, 22, 76, 76, 8); c.clip();
+    if (tr) {
+      const [s1, s2, sun, m1, m2] = tr.art;
+      const ag = c.createLinearGradient(0, 22, 0, 98); ag.addColorStop(0, s1); ag.addColorStop(1, s2);
+      c.fillStyle = ag; c.fillRect(24, 22, 76, 76);
+      c.fillStyle = sun; c.shadowColor = sun; c.shadowBlur = 14; c.beginPath(); c.arc(62, 58, 15, 0, 7); c.fill(); c.shadowBlur = 0;
+      c.fillStyle = m1; c.globalAlpha = .92; c.beginPath(); c.moveTo(24, 98); c.lineTo(24, 76); c.lineTo(42, 66); c.lineTo(54, 74); c.lineTo(70, 60); c.lineTo(86, 72); c.lineTo(100, 66); c.lineTo(100, 98); c.fill();
+      c.globalAlpha = 1; c.fillStyle = m2; c.beginPath(); c.moveTo(24, 98); c.lineTo(24, 86); c.lineTo(46, 80); c.lineTo(62, 88); c.lineTo(80, 78); c.lineTo(100, 86); c.lineTo(100, 98); c.fill();
+    } else { c.fillStyle = '#2f2620'; c.fillRect(24, 22, 76, 76); }
+    c.restore();
+    c.strokeStyle = 'rgba(255,255,255,.08)'; c.lineWidth = 1; rr(c, 24.5, 22.5, 75, 75, 8); c.stroke();
+    // title and subtitle
+    c.textBaseline = 'alphabetic';
+    c.fillStyle = '#eadfce'; c.font = F(500, 20); if ('letterSpacing' in c) c.letterSpacing = '0.5px';
+    c.fillText(tr ? tr.title.toUpperCase() : 'NO TAPE', 120, 44);
+    if ('letterSpacing' in c) c.letterSpacing = '0px';
+    const now = performance.now();
+    if (msg && now > msg.until) msg = null;
+    c.font = F(400, 15); c.fillStyle = msg ? '#f3a24a' : '#b9a893';
+    const sub = msg ? msg.text : !tr ? 'Insert a cassette' : S.state === 'out' ? 'Ejected' : S.state === 'moving' ? 'Loading' : tr.artist;
+    c.fillText(sub, 120, 68, 170);
+    // status: bluetooth, battery, 92%
+    c.strokeStyle = '#c8b8a3'; c.lineWidth = 1.5; c.lineCap = 'round'; c.lineJoin = 'round';
+    c.beginPath(); c.moveTo(330, 24); c.lineTo(337, 31); c.lineTo(333.5, 34.5); c.lineTo(333.5, 19.5); c.lineTo(337, 23); c.lineTo(330, 30); c.stroke();
+    c.strokeStyle = '#f3a24a'; rr(c, 348.75, 21.75, 22.5, 12.5, 2.5); c.stroke();
+    c.fillStyle = '#f3a24a'; rr(c, 372.5, 25.5, 2, 5, 1); c.fill(); rr(c, 351, 24, 17, 8, 1); c.fill();
+    c.font = F(500, 13); c.fillStyle = '#d9cbb7'; c.textAlign = 'right'; c.fillText('92%', 416, 33); c.textAlign = 'left';
+    // waveform
+    const live = S.playing && analyser;
+    if (live) analyser.getByteFrequencyData(bins);
+    c.fillStyle = '#f3a24a'; c.shadowColor = 'rgba(255,150,50,.8)'; c.shadowBlur = 6;
+    for (let i = 0; i < 26; i++) {
+      const x = 300 + i * 4.6, env = Math.pow(Math.sin(Math.PI * (i + 1) / 27), .8);
+      const v = live ? Math.pow(bins[1 + i] / 255, 1.15) * env * 2.4 : 0;
+      hs[i] = Math.max(v, hs[i] - dt * 1.6);
+      const h = Math.max(3, clamp(hs[i], 0, 1) * 26);
+      rr(c, x, 60 - h / 2, 2.4, h, 1.2); c.fill();
+    }
+    c.shadowBlur = 0;
+    // progress
+    const p = tr ? clamp(S.t / tr.dur, 0, 1) : 0;
+    c.font = F(400, 14); c.fillStyle = '#b9a893'; c.fillText(tr ? fmt(S.t) : '-:--', 120, 99);
+    c.textAlign = 'right'; c.fillText(tr ? fmt(tr.dur) : '-:--', 416, 99); c.textAlign = 'left';
+    c.fillStyle = 'rgba(255,255,255,.18)'; rr(c, 162, 92, 214, 3, 1.5); c.fill();
+    c.fillStyle = '#f3a24a'; rr(c, 162, 92, 214 * p, 3, 1.5); c.fill();
+    c.shadowColor = 'rgba(255,150,50,.8)'; c.shadowBlur = 8; c.beginPath(); c.arc(162 + 214 * p, 93.5, 6, 0, 7); c.fill(); c.shadowBlur = 0;
+
+    if (dT0 >= 0) {
+      const pr = clamp((performance.now() - dT0) / 720, 0, 1), e = 1 - Math.pow(1 - pr, 4);
+      const nw = oc.getImageData(0, 0, 880, 240), o = fromImg.data, n = nw.data;
+      for (let y = 0; y < 240; y++) for (let x = 0; x < 880; x++) {
+        const th = BAYER[((y >> 2) & 7) * 8 + ((x >> 2) & 7)] * .7 + (x / 880) * .3;
+        if (th >= e) { const k = (y * 880 + x) * 4; n[k] = o[k]; n[k + 1] = o[k + 1]; n[k + 2] = o[k + 2]; }
+      }
+      dc.putImageData(nw, 0, 0);
+      if (pr >= 1) dT0 = -1;
+    } else { dc.clearRect(0, 0, 880, 240); dc.drawImage(off, 0, 0); }
+  }
+
+  /* ---------- Reels: constant tape speed, so each hub turns at v / r while the packs trade size ---------- */
+  const rc = $('reels').getContext('2d'); rc.scale(2, 2);
+  const HUB_L = { x: 115, y: 98 }, HUB_R = { x: 285, y: 98 }, R_MIN = 18, R_MAX = 64, TAPE_V = 95;
+  const GUIDE_L = { x: 40, y: 184 }, GUIDE_R = { x: 360, y: 184 };
+  let angL = 0, angR = .7, spd = 0;
+  function tangent(cn, r, g, left) {
+    const dx = g.x - cn.x, dy = g.y - cn.y, d = Math.hypot(dx, dy);
+    if (d <= r) return g;
+    const a = Math.atan2(dy, dx), b = Math.acos(r / d);
+    const p1 = { x: cn.x + r * Math.cos(a + b), y: cn.y + r * Math.sin(a + b) }, p2 = { x: cn.x + r * Math.cos(a - b), y: cn.y + r * Math.sin(a - b) };
+    return (left ? p1.x < p2.x : p1.x > p2.x) ? p1 : p2;
+  }
+  function pack(cn, r) {
+    const g = rc.createRadialGradient(cn.x, cn.y, 12, cn.x, cn.y, r);
+    g.addColorStop(0, '#3a2819'); g.addColorStop(.8, '#5e412b'); g.addColorStop(1, '#74523a');
+    rc.fillStyle = g; rc.beginPath(); rc.arc(cn.x, cn.y, r, 0, 7); rc.fill();
+    rc.lineWidth = .6;
+    for (let q = 16; q < r - 1; q += 2.6) { rc.strokeStyle = `rgba(255,225,190,${.025 + (q % 7) * .004})`; rc.beginPath(); rc.arc(cn.x, cn.y, q, 0, 7); rc.stroke(); }
+    rc.fillStyle = 'rgba(255,230,200,.11)';
+    for (const a of [-2.2, .94]) { rc.beginPath(); rc.moveTo(cn.x, cn.y); rc.arc(cn.x, cn.y, r, a - .28, a + .28); rc.closePath(); rc.fill(); }
+    rc.strokeStyle = 'rgba(0,0,0,.55)'; rc.lineWidth = 1; rc.beginPath(); rc.arc(cn.x, cn.y, r, 0, 7); rc.stroke();
+  }
+  function hub(cn, ang) {
+    rc.save(); rc.translate(cn.x, cn.y);
+    const g = rc.createRadialGradient(-4, -5, 2, 0, 0, 15); g.addColorStop(0, '#fbf8f2'); g.addColorStop(1, '#cfc7b8');
+    rc.fillStyle = g; rc.beginPath(); rc.arc(0, 0, 14, 0, 7); rc.fill();
+    rc.strokeStyle = 'rgba(0,0,0,.3)'; rc.lineWidth = .8; rc.stroke();
+    rc.rotate(ang);
+    rc.fillStyle = '#1e1813'; rc.beginPath(); rc.arc(0, 0, 9.5, 0, 7); rc.fill();
+    rc.fillStyle = '#ece6da';
+    for (let i = 0; i < 6; i++) { rc.save(); rc.rotate(i * Math.PI / 3); rc.fillRect(-1.6, -9.8, 3.2, 3.6); rc.restore(); }
+    rc.fillStyle = '#b5ad9f'; rc.fillRect(-3, 10.2, 6, 3.4);
+    rc.fillStyle = '#5f564d'; rc.beginPath(); rc.arc(0, 0, 4.2, 0, 7); rc.fill();
+    rc.strokeStyle = '#8d8377'; rc.lineWidth = 1;
+    for (let i = 0; i < 3; i++) { rc.save(); rc.rotate(i * 2.094); rc.beginPath(); rc.moveTo(0, -1); rc.lineTo(0, -4.2); rc.stroke(); rc.restore(); }
+    rc.restore();
+  }
+  function drawReels(dt) {
+    const target = S.wind ? S.wind * 10 : S.playing ? 1 : 0;
+    spd += (target - spd) * (1 - Math.exp(-dt * (S.wind ? 2.5 : 6)));
+    if (S.deck < 0) return;
+    const tr = TRACKS[S.deck];
+    const p = clamp(S.t / tr.dur, 0, 1), span = R_MAX * R_MAX - R_MIN * R_MIN;
+    const rR = Math.sqrt(R_MIN * R_MIN + p * span), rL = Math.sqrt(R_MAX * R_MAX - p * span);
+    const cap = (w) => clamp(w, -20, 20);
+    angL += cap(TAPE_V * spd / rL) * dt; angR += cap(TAPE_V * spd / rR) * dt;
+    rc.clearRect(0, 0, 400, 196);
+    rc.fillStyle = '#0f0b08'; rc.fillRect(0, 0, 400, 196);
+    rc.fillStyle = '#8f8a82'; rc.fillRect(194, 174, 12, 2);
+    rc.fillStyle = '#d9cdb6'; rc.fillRect(191, 176, 18, 5);
+    const tl = tangent(HUB_L, rL, GUIDE_L, true), tg = tangent(HUB_R, rR, GUIDE_R, false);
+    rc.strokeStyle = '#4a3424'; rc.lineWidth = 3.4;
+    rc.beginPath(); rc.moveTo(tl.x, tl.y); rc.lineTo(GUIDE_L.x, GUIDE_L.y); rc.lineTo(GUIDE_R.x, GUIDE_R.y); rc.lineTo(tg.x, tg.y); rc.stroke();
+    pack(HUB_L, rL); pack(HUB_R, rR);
+    hub(HUB_L, angL); hub(HUB_R, angR);
+  }
+
+  /* ---------- Frame loop ---------- */
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(.1, (now - last) / 1000); last = now;
+    const tr = seated();
+    if (tr) {
+      if (S.wind) {
+        S.t += S.wind * dt * 14 * Math.min(1, Math.abs(spd) / 10 + .15);
+        if (S.t <= 0) { S.t = 0; halt(); ui(); }
+        else if (S.t >= tr.dur) { S.t = tr.dur; halt(); toast('End of tape'); ui(); }
+      } else if (S.playing) {
+        S.t = tr.rec ? tr.rec.currentTime : S.t + dt;
+        if (S.t >= tr.dur) { S.t = tr.dur; halt(); S.paused = false; toast('End of tape'); ui(); }
+      }
+    }
+    // Redraw only while something changes: playback, winding, a moving tape, a dissolve, a message, or a recent input
+    const moving = tapes.some((t) => t.tw || t.sp || t.drag);
+    const settling = Math.abs(spd) > .004 || hs.some((v) => v > .002) || casY !== 0;
+    if (S.playing || S.wind || moving || settling || dT0 >= 0 || msg || dirty > 0) {
+      stepMotion(now, dt); drawDisplay(dt); drawReels(dt);
+      if (dirty > 0) dirty--;
+    }
+    requestAnimationFrame(frame);
+  }
+
+  for (const ev of ['pointerdown', 'keydown', 'wheel']) document.addEventListener(ev, poke, true);
+  window.addEventListener('pagehide', () => { if (S.playing) pause(); });
+  // First tape starts seated in the deck
+  const t0 = tapes[0]; t0.role = 'deck'; t0.x = DECK_X; t0.y = DECK_Y; t0.r = 0; render(t0);
+  el.front.innerHTML = casSVG(TRACKS[0], false);
+  for (const { t, to } of pileHomes()) { Object.assign(t, to); render(t); }
+  ui(); setVol(S.vol);
+  requestAnimationFrame(frame);
+  window.__deck = { S, TRACKS, tapes };
+})();
+</script>
+
+</body>
+</html>
