@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, type CSSProperties } from "react";
 import type { Demo } from "@/lib/registry";
 

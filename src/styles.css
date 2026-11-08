@@ -7,7 +7,7 @@
   --chip: #efefef;
   --accent: #2f6fde;
   --sans: "Public Sans Variable", "Public Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --mono: "Geist Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
   --hand: "Caveat", "Bradley Hand", cursive;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   color-scheme: light;

@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, type ElementType, type ReactNode } from "react";
 
 type Props = {

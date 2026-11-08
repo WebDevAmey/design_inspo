@@ -1,10 +1,12 @@
-import Link from "next/link";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { ComponentFrame } from "@/components/ComponentFrame";
 import { Reveal } from "@/components/Reveal";
 import { ArrowUpRight, SiteFooter, SiteHeader } from "@/components/SiteHeader";
 import { demos } from "@/lib/registry";
 
-export default function Home() {
+export const Route = createFileRoute("/")({ component: Home });
+
+function Home() {
   return (
     <div className="wrap">
       <SiteHeader />
@@ -16,7 +18,7 @@ export default function Home() {
         </Reveal>
         <Reveal as="p" className="lede" delay={140}>
           A quiet corner for interface experiments: clean layouts, careful depth, and the tiny moving parts that make a
-          product feel considered. Two of them live here, and you can use both.
+          product feel considered. Each one here is live, so go ahead and use them.
         </Reveal>
         <Reveal as="p" className="contact" delay={210}>
           <span className="pill">{demos.length} components</span>
@@ -38,7 +40,7 @@ export default function Home() {
               <h2>
                 {demo.title} <small>{demo.index}</small>
               </h2>
-              <Link className="open" href={`/components/${demo.slug}`}>
+              <Link className="open" to="/components/$slug" params={{ slug: demo.slug }}>
                 Open full <ArrowUpRight />
               </Link>
               <p>{demo.blurb}</p>

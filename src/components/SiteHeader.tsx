@@ -1,14 +1,16 @@
-import Link from "next/link";
+import { Link } from "@tanstack/react-router";
 
 export function SiteHeader() {
   return (
     <header className="top">
-      <Link className="mark" href="/" aria-label="amey, home">
+      <Link className="mark" to="/" aria-label="amey, home">
         <i aria-hidden="true" />
         amey.
       </Link>
       <nav className="nav" aria-label="Primary">
-        <Link href="/#work">Components</Link>
+        <Link to="/" hash="work">
+          Components
+        </Link>
         <a href="https://github.com/WebDevAmey" target="_blank" rel="noopener noreferrer">
           GitHub
         </a>
