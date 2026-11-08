@@ -124,3 +124,45 @@ h1 small { font: 500 13px/1 var(--mono); color: var(--faint); letter-spacing: 0.
   .frame iframe { height: var(--hm); }
   .frame-full iframe { height: max(var(--hm), 72vh); }
 }
+
+/* ---------- home: bento grid, components only ---------- */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.bento {
+  width: min(100% - 32px, 1280px); margin: 16px auto 40px;
+  display: grid; gap: 16px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: 500px 420px;
+  grid-template-areas:
+    "deck deck deck deck deck deck deck deck plane plane plane plane"
+    "pocket pocket pocket pocket pocket pocket pocket pocket plane plane plane plane";
+}
+.tile { position: relative; min-width: 0; }
+.tile-cassette-deck { grid-area: deck; }
+.tile-paper-plane { grid-area: plane; }
+.tile-pocket-player { grid-area: pocket; }
+.tile .frame { height: 100%; }
+.frame-bare iframe { height: 100%; }
+.frame-bare .replay { padding: 6px; }
+.tile-open {
+  position: absolute; top: 12px; right: 12px; z-index: 2;
+  display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8); border: 1px solid var(--line); color: var(--muted);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  transition: color 0.2s, border-color 0.2s, transform 0.16s var(--ease);
+}
+.tile-open:active { transform: scale(0.95); }
+@media (hover: hover) and (pointer: fine) { .tile-open:hover { color: var(--ink); border-color: var(--faint); } }
+
+@media (max-width: 960px) {
+  .bento { grid-template-columns: 1fr; grid-template-rows: auto; grid-template-areas: "deck" "pocket" "plane"; }
+  .tile-cassette-deck { height: 400px; }
+  .tile-pocket-player { height: 320px; }
+  .tile-paper-plane { height: 720px; }
+}
+@media (max-width: 560px) {
+  .bento { gap: 12px; width: calc(100% - 24px); margin-top: 12px; }
+  .tile-cassette-deck { height: 200px; }
+  .tile-pocket-player { height: 240px; }
+  .tile-paper-plane { height: 640px; }
+  .frame-bare iframe { height: 100%; }
+}
