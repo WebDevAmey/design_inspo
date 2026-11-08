@@ -33,6 +33,17 @@ export const demos: Demo[] = [
     src: "/demos/pocket-player.html",
     height: { desktop: 400, mobile: 300 },
   },
+  {
+    slug: "cassette-deck",
+    index: "03",
+    title: "Cassette Deck",
+    blurb:
+      "A cream cassette deck you load by hand. Eject a tape, pull it out of the side slot, set it down anywhere and slide another one in. Spring-driven motion, piano-key sounds, and your own audio played through the deck's hiss and wow.",
+    tags: ["skeuomorphic", "springs and drag", "web audio"],
+    src: "/demos/cassette-deck.html",
+    height: { desktop: 600, mobile: 260 },
+    hint: "Press the first brown key",
+  },
 ];
 
 export const getDemo = (slug: string) => demos.find((d) => d.slug === slug);
