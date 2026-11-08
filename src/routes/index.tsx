@@ -1,12 +1,12 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { ComponentFrame } from "@/components/ComponentFrame";
+import { createFileRoute } from "@tanstack/react-router";
 import { Reveal } from "@/components/Reveal";
-import { ArrowUpRight, SiteFooter, SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
+import { Tile } from "@/components/Tile";
 import { demos } from "@/lib/registry";
 
 export const Route = createFileRoute("/")({ component: Home });
 
-/** A portfolio page: a short note about me, then the components in a bento grid with no labels. */
+/** A portfolio page: a short note about me, then each component in an equal card that expands on click. */
 function Home() {
   return (
     <div className="wrap home">
@@ -21,21 +21,13 @@ function Home() {
           A quiet corner for interface experiments: clean layouts, careful depth, and the tiny moving parts that make a
           product feel considered. Everything below is live, so go ahead and use it.
         </Reveal>
-        <Reveal as="p" className="contact" delay={210}>
-          <a href="https://github.com/WebDevAmey" target="_blank" rel="noopener noreferrer">
-            github.com/WebDevAmey
-          </a>
-        </Reveal>
       </section>
 
-      <main id="work" className="bento">
+      <main id="work" className="tiles">
         {demos.map((demo, i) => (
           <Reveal as="section" className={`tile tile-${demo.slug}`} id={demo.slug} key={demo.slug} delay={i * 60}>
             <h2 className="sr-only">{demo.title}</h2>
-            <ComponentFrame demo={demo} bare />
-            <Link className="tile-open" to="/components/$slug" params={{ slug: demo.slug }} aria-label={`Open ${demo.title}`}>
-              <ArrowUpRight />
-            </Link>
+            <Tile demo={demo} />
           </Reveal>
         ))}
       </main>

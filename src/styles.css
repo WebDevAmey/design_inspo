@@ -125,48 +125,43 @@ h1 small { font: 500 13px/1 var(--mono); color: var(--faint); letter-spacing: 0.
   .frame-full iframe { height: max(var(--hm), 72vh); }
 }
 
-/* ---------- home: portfolio intro, then a bento grid of components (no labels) ---------- */
+/* ---------- home: portfolio intro, then one equal card per component ---------- */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.wrap.home { width: min(100% - 32px, 1200px); }
+.wrap.home { width: min(100% - 32px, 1120px); }
 .home .intro { max-width: 760px; }
-/* Each tile is sized so its component shows whole and at a comfortable scale:
-   the deck needs width, the paper plane needs height for its flight, the player needs a wide strip. */
-.bento {
-  display: grid; gap: 16px; margin: 8px 0 56px;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  grid-template-rows: 640px 720px;
-  grid-template-areas:
-    "deck deck deck deck deck deck deck deck deck deck deck deck"
-    "plane plane plane plane plane pocket pocket pocket pocket pocket pocket pocket";
-}
-.tile { position: relative; min-width: 0; }
-.tile-cassette-deck { grid-area: deck; }
-.tile-paper-plane { grid-area: plane; }
-.tile-pocket-player { grid-area: pocket; }
-.tile .frame { height: 100%; }
+html.lock { overflow: hidden; }
+
+/* Every card gets the same full-width box, tall enough for the paper plane's flight */
+.tiles { display: grid; gap: 20px; margin: 8px 0 56px; }
+.tile { min-width: 0; }
+.tile-slot { height: 720px; }
+.tile-card { position: relative; height: 100%; transform-origin: 0 0; }
+.tile-card .frame { height: 100%; }
 .frame-bare iframe { height: 100%; }
 .frame-bare .replay { padding: 6px; }
-.tile-open {
+
+/* Expanded: the same card becomes fixed and fills the screen, so the live component keeps its state */
+.tile-card.is-open { position: fixed; inset: max(16px, 3vh) max(16px, 3vw); height: auto; z-index: 50; }
+.tile-card.is-open .frame { box-shadow: 0 30px 80px -20px rgba(17, 18, 20, 0.35); }
+.tile-scrim { position: fixed; inset: 0; z-index: 40; background: rgba(251, 251, 251, 0.82); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: scrim-in 200ms ease-out; }
+@keyframes scrim-in { from { opacity: 0; } }
+
+.tile-expand {
   position: absolute; top: 12px; right: 12px; z-index: 2;
-  display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px;
-  background: rgba(255, 255, 255, 0.8); border: 1px solid var(--line); color: var(--muted);
+  display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px; cursor: pointer;
+  background: rgba(255, 255, 255, 0.85); border: 1px solid var(--line); color: var(--muted);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   transition: color 0.2s, border-color 0.2s, transform 0.16s var(--ease);
 }
-.tile-open:active { transform: scale(0.95); }
-@media (hover: hover) and (pointer: fine) { .tile-open:hover { color: var(--ink); border-color: var(--faint); } }
+.tile-expand:active { transform: scale(0.95); }
+@media (hover: hover) and (pointer: fine) { .tile-expand:hover { color: var(--ink); border-color: var(--faint); } }
 
-@media (max-width: 960px) {
-  .bento { grid-template-columns: 1fr; grid-template-rows: auto; grid-template-areas: "deck" "plane" "pocket"; }
-  .tile-cassette-deck { height: 440px; }
-  .tile-paper-plane { height: 760px; }
-  .tile-pocket-player { height: 380px; }
-}
+@media (max-width: 960px) { .tile-slot { height: 640px; } }
 @media (max-width: 560px) {
   .wrap.home { width: calc(100% - 24px); }
-  .bento { gap: 12px; }
-  .tile-cassette-deck { height: 230px; }
-  .tile-paper-plane { height: 700px; }
-  .tile-pocket-player { height: 260px; }
+  .tiles { gap: 12px; }
+  .tile-slot { height: 560px; }
   .frame-bare iframe { height: 100%; }
+  .tile-card.is-open { inset: 12px; }
 }
+@media (prefers-reduced-motion: reduce) { .tile-scrim { animation: none; } }
