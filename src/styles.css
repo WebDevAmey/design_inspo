@@ -128,7 +128,8 @@ h1 small { font: 500 13px/1 var(--mono); color: var(--faint); letter-spacing: 0.
 /* ---------- home: portfolio intro, then one equal card per component ---------- */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .wrap.home { width: min(100% - 32px, 1120px); }
-.home .intro { max-width: 760px; }
+.home .intro { max-width: 760px; margin-inline: auto; text-align: center; }
+.home .intro .lede { margin-inline: auto; }
 html.lock { overflow: hidden; }
 
 /* Every card gets the same full-width box, tall enough for the paper plane's flight */
