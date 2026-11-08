@@ -24,18 +24,8 @@ export const demos: Demo[] = [
     hint: "Press Send",
   },
   {
-    slug: "pocket-player",
-    index: "02",
-    title: "Pocket Player",
-    blurb:
-      "A pill-shaped digital music player with brushed-metal buttons and a pixel LCD whose cover art resolves on every track change. Plays built-in tracks, or drop in your own audio.",
-    tags: ["skeuomorphic", "web audio", "pixel art"],
-    src: "/demos/pocket-player.html",
-    height: { desktop: 400, mobile: 300 },
-  },
-  {
     slug: "cassette-deck",
-    index: "03",
+    index: "02",
     title: "Cassette Deck",
     blurb:
       "A cream cassette deck you load by hand. Eject a tape, pull it out of the side slot, set it down anywhere and slide another one in. Spring-driven motion, piano-key sounds, and your own audio played through the deck's hiss and wow.",

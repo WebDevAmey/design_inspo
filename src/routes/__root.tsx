@@ -16,7 +16,7 @@ export const Route = createRootRoute({
       { title: "amey. — design inspo" },
       {
         name: "description",
-        content: "A small collection of interface experiments: a paper plane send animation, a pocket music player and a cassette deck.",
+        content: "A small collection of interface experiments: a paper plane send animation and a cassette deck.",
       },
       { property: "og:title", content: "amey. — design inspo" },
       { property: "og:description", content: "Interface experiments with small moving parts." },

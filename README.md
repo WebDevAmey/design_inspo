@@ -5,7 +5,6 @@ A small showcase for interface components, built with TanStack Start (TanStack R
 | Component | Demo page | What it is |
 |---|---|---|
 | Paper Plane | `public/demos/paper-plane.html` | A message composer. Sending collapses the card, prints the note, folds it into a paper plane and flies it into the Send button. Plain HTML, CSS and JS. |
-| Pocket Player | `public/demos/pocket-player.html` | A pill-shaped music player with brushed-metal buttons and a pixel LCD. React (loaded from a CDN) and the Web Audio API. |
 | Cassette Deck | `public/demos/cassette-deck.html` | A cassette deck you load by hand: eject, pull the tape out of the side slot, set it down anywhere, slide another in. Spring physics, synthesised key sounds, Web Audio. Double-click a tape (or drop an audio file on it) to play your own audio through the deck. |
 
 ## How it fits together
