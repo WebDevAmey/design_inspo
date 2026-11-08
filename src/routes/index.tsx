@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Reveal } from "@/components/Reveal";
-import { SiteFooter, SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteHeader";
 import { Tile } from "@/components/Tile";
 import { demos } from "@/lib/registry";
 
@@ -10,8 +10,6 @@ export const Route = createFileRoute("/")({ component: Home });
 function Home() {
   return (
     <div className="wrap home">
-      <SiteHeader />
-
       <section className="intro">
         <Reveal as="p" className="hey">Hey,</Reveal>
         <Reveal as="h1" delay={70}>
