@@ -34,6 +34,17 @@ export const demos: Demo[] = [
     size: { w: 1240, h: 660 },
     hint: "Press the first brown key",
   },
+  {
+    slug: "morph-navbar",
+    index: "03",
+    title: "Morphing Navbar",
+    blurb:
+      "One dark shell that morphs between Work, Services and Studio. Work types its pictures in as ASCII and opens them where the pointer enters, Services attaches a connected box, and Studio squeezes gooey cards out of the shell's edge.",
+    tags: ["morphing", "gooey springs", "ASCII reveal"],
+    src: "/demos/morph-navbar.html",
+    size: { w: 1240, h: 760 },
+    hint: "Hover Studio",
+  },
 ];
 
 export const getDemo = (slug: string) => demos.find((d) => d.slug === slug);
